@@ -1,0 +1,1 @@
+ScanditLabelCapture implements the label capture capabilities of the Scandit Data Capture SDK.
