@@ -1,4 +1,4 @@
-import { DefaultSerializeable } from 'scandit-datacapture-frameworks-core';
+import { DefaultSerializeable } from 'scandit-react-native-datacapture-core/js/private/Serializeable';
 export declare class LabelCaptureSettings extends DefaultSerializeable {
     static fromJSON(json: {
         [key: string]: any;

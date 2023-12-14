@@ -1,5 +1,5 @@
-import { Barcode } from 'scandit-react-native-datacapture-barcode';
-import { Quadrilateral } from 'scandit-react-native-datacapture-core';
+import { Barcode } from 'scandit-react-native-datacapture-barcode/js/Barcode';
+import { Quadrilateral } from 'scandit-react-native-datacapture-core/js/Common';
 export declare enum LabelFieldType {
     Barcode = "barcode",
     Text = "text",

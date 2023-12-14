@@ -1,4 +1,4 @@
-import { Brush } from 'scandit-react-native-datacapture-core';
+import { Brush } from 'scandit-react-native-datacapture-core/js/Common';
 import { LabelCaptureBasicOverlay } from '../LabelCaptureBasicOverlay';
 import { CapturedLabel, LabelField } from '../LabelCaptureSession';
 export declare class LabelCaptureBasicOverlayProxy {

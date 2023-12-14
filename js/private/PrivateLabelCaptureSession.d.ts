@@ -1,5 +1,5 @@
-import { BarcodeJSON } from 'scandit-datacapture-frameworks-barcode';
-import { QuadrilateralJSON } from 'scandit-datacapture-frameworks-core';
+import { BarcodeJSON } from 'scandit-react-native-datacapture-barcode/js/private/PrivateBarcode';
+import { QuadrilateralJSON } from 'scandit-react-native-datacapture-core/js/private/PrivateCommon';
 import { CapturedLabel, LabelCaptureSession, LabelField } from '../LabelCaptureSession';
 export interface CapturedLabelJSON {
     name: string;

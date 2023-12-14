@@ -1,6 +1,6 @@
-import { PointWithUnit } from 'scandit-react-native-datacapture-core';
+import { PointWithUnit } from 'scandit-react-native-datacapture-core/js/Common';
 import { CapturedLabel } from '../LabelCaptureSession';
-import { Anchor } from 'scandit-react-native-datacapture-core';
+import { Anchor } from 'scandit-react-native-datacapture-core/js/CommonEnums';
 import { LabelCaptureAdvancedOverlayView } from 'LabelCaptureAdvancedOverlayView';
 import { LabelCaptureAdvancedOverlay } from 'LabelCaptureAdvancedOverlay';
 export declare class LabelCaptureAdvancedOverlayProxy {
