@@ -54,10 +54,11 @@ enum ScanditDataCaptureLabelError: Int, CustomNSError {
 
 @objc(ScanditDataCaptureLabel)
 class ScanditDataCaptureLabel: RCTEventEmitter {
+    internal let deserializer = LabelCaptureDeserializer()
     internal var hasListeners = false
-    
+
     internal var capturedLabelViewCache = [RCTRootView: CapturedLabel]()
-    
+
     internal var offset: [Int: PointWithUnit] = [:]
 
     // LabelCaptureListener
@@ -73,7 +74,7 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
 
     // LabelCaptureBasicOverlayListener
     internal var overlay: LabelCaptureBasicOverlay?
-    
+
     // LabelCaptureAdvancedOverlayListener
     internal let viewForLabelLock =
         CallbackLock<JSView>(name: ScanditDataCaptureLabelEvent.viewForLabel.rawValue)
@@ -81,7 +82,7 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
         CallbackLock<Anchor>(name: ScanditDataCaptureLabelEvent.anchorForLabel.rawValue)
     internal let offsetForLabelLock =
         CallbackLock<PointWithUnit>(name: ScanditDataCaptureLabelEvent.offsetForLabel.rawValue)
-    
+
     internal var advancedOverlay: LabelCaptureAdvancedOverlay?
 
     override init() {
@@ -99,6 +100,11 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
 
     @objc override func invalidate() {
         super.invalidate()
+        unregisterDeserializer()
+        capturedLabelViewCache.removeAll()
+        lastCapturedLabels?.removeAll()
+        lastFrameSequenceId = nil
+        overlay = nil
         unlockLocks()
     }
 
