@@ -1,8 +1,8 @@
 import { CapturedLabel } from 'LabelCaptureSession';
-import { PointWithUnit } from 'scandit-react-native-datacapture-core';
-import { Anchor } from 'scandit-react-native-datacapture-core';
-import { DataCaptureOverlay, DataCaptureView } from 'scandit-react-native-datacapture-core';
-import { DefaultSerializeable } from 'scandit-datacapture-frameworks-core';
+import { PointWithUnit } from 'scandit-react-native-datacapture-core/js/Common';
+import { Anchor } from 'scandit-react-native-datacapture-core/js/CommonEnums';
+import { DataCaptureOverlay, DataCaptureView } from 'scandit-react-native-datacapture-core/js/DataCaptureView';
+import { DefaultSerializeable } from 'scandit-react-native-datacapture-core/js/private/Serializeable';
 import { LabelCapture } from './LabelCapture';
 import { LabelCaptureAdvancedOverlayView } from 'LabelCaptureAdvancedOverlayView';
 export interface LabelCaptureAdvancedOverlayListener {

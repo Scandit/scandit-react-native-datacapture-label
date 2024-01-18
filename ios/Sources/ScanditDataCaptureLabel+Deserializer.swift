@@ -10,13 +10,9 @@ import ScanditDataCaptureCore
 
 extension ScanditDataCaptureLabel {
     func registerDeserializer() {
+        let deserializer = LabelCaptureDeserializer()
         deserializer.delegate = self
         ScanditDataCaptureCore.register(modeDeserializer: deserializer)
-    }
-    
-    func unregisterDeserializer() {
-        deserializer.delegate = nil
-        ScanditDataCaptureCore.unregister(modeDeserializer: deserializer)
     }
 }
 
