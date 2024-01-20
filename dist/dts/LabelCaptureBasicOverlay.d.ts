@@ -1,8 +1,8 @@
 import { CapturedLabel, LabelField } from 'LabelCaptureSession';
-import { Brush } from 'scandit-react-native-datacapture-core/js/Common';
-import { DataCaptureOverlay, DataCaptureView } from 'scandit-react-native-datacapture-core/js/DataCaptureView';
-import { DefaultSerializeable } from 'scandit-react-native-datacapture-core/js/private/Serializeable';
-import { Viewfinder } from 'scandit-react-native-datacapture-core/js/Viewfinder';
+import { Brush } from 'scandit-react-native-datacapture-core';
+import { DataCaptureOverlay, DataCaptureView } from 'scandit-react-native-datacapture-core';
+import { DefaultSerializeable } from 'scandit-datacapture-frameworks-core';
+import { Viewfinder } from 'scandit-react-native-datacapture-core';
 import { LabelCapture } from './LabelCapture';
 export interface LabelCaptureBasicOverlayListener {
     brushForFieldOfLabel?(overlay: LabelCaptureBasicOverlay, field: LabelField, label: CapturedLabel): Brush | null;

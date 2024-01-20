@@ -1,5 +1,5 @@
-import { CameraSettings } from 'scandit-react-native-datacapture-core/js/Camera+Related';
-import { Color } from 'scandit-react-native-datacapture-core/js/Common';
+import { CameraSettings } from 'scandit-react-native-datacapture-core';
+import { Color } from 'scandit-react-native-datacapture-core';
 export declare const Defaults: {
     LabelCapture: {
         RecommendedCameraSettings: CameraSettings;
