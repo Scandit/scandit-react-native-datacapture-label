@@ -108,10 +108,6 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
         unlockLocks()
     }
 
-    deinit {
-        invalidate()
-    }
-
     internal func unlockLocks() {
         didUpdateSessionLock.reset()
         brushForFieldLock.reset()
