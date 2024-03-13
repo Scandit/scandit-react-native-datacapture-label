@@ -30,10 +30,8 @@ extension ScanditDataCaptureLabel: LabelCaptureDeserializerDelegate {
     func labelCaptureDeserializer(_ deserializer: LabelCaptureDeserializer,
                                   didFinishDeserializingMode mode: LabelCapture,
                                   from jsonValue: JSONValue) {
-        if jsonValue.containsKey("enabled") {
-            mode.isEnabled = jsonValue.bool(forKey: "enabled")
-        }
-        mode.addListener(self)
+        labelCapture = mode
+        labelCapture?.isEnabled = modeEnabled.value
     }
 
     func labelCaptureDeserializer(_ deserializer: LabelCaptureDeserializer,
@@ -57,8 +55,7 @@ extension ScanditDataCaptureLabel: LabelCaptureDeserializerDelegate {
     func labelCaptureDeserializer(_ deserializer: LabelCaptureDeserializer,
                                   didFinishDeserializingBasicOverlay overlay: LabelCaptureBasicOverlay,
                                   from jsonValue: JSONValue) {
-        self.overlay = overlay
-        overlay.delegate = self
+        self.basicOverlay = overlay
     }
 
     func labelCaptureDeserializer(_ deserializer: LabelCaptureDeserializer,
@@ -71,6 +68,5 @@ extension ScanditDataCaptureLabel: LabelCaptureDeserializerDelegate {
                                   didFinishDeserializingAdvancedOverlay overlay: LabelCaptureAdvancedOverlay,
                                   from jsonValue: JSONValue) {
         advancedOverlay = overlay
-        advancedOverlay?.delegate = self
     }
 }

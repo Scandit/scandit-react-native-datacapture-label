@@ -4,12 +4,12 @@ import { DefaultSerializeable } from 'scandit-datacapture-frameworks-core';
 import { LabelCaptureListener } from './LabelCaptureListener';
 import { LabelCaptureSettings } from './LabelCaptureSettings';
 export declare class LabelCapture extends DefaultSerializeable implements DataCaptureMode {
-    get isEnabled(): boolean;
-    set isEnabled(isEnabled: boolean);
     get context(): DataCaptureContext | null;
     static get recommendedCameraSettings(): CameraSettings;
     private type;
     private _isEnabled;
+    get isEnabled(): boolean;
+    set isEnabled(isEnabled: boolean);
     private settings;
     private privateContext;
     private get _context();
@@ -17,10 +17,10 @@ export declare class LabelCapture extends DefaultSerializeable implements DataCa
     private listeners;
     private listenerProxy;
     private isInListenerCallback;
+    private modeProxy;
     static forContext(context: DataCaptureContext | null, settings: LabelCaptureSettings): LabelCapture;
     private constructor();
     applySettings(settings: LabelCaptureSettings): Promise<void>;
     addListener(listener: LabelCaptureListener): void;
     removeListener(listener: LabelCaptureListener): void;
-    private didChange;
 }

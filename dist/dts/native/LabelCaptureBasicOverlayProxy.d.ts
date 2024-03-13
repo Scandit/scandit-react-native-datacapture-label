@@ -9,4 +9,5 @@ export declare class LabelCaptureBasicOverlayProxy {
     setBrushForLabel(brush: Brush, label: CapturedLabel): Promise<void>;
     subscribeListener(): void;
     unsubscribeListener(): void;
+    updateBasicOverlay(basicOverlayJson: string): Promise<void>;
 }

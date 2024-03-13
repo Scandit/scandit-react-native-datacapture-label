@@ -5,5 +5,4 @@ export interface PrivateLabelCapture extends PrivateDataCaptureMode {
     _context: DataCaptureContext | null;
     listeners: LabelCaptureListener[];
     isInListenerCallback: boolean;
-    didChange: () => Promise<void>;
 }

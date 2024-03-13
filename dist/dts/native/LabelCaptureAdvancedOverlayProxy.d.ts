@@ -13,6 +13,7 @@ export declare class LabelCaptureAdvancedOverlayProxy {
     clearCapturedLabelViews(): Promise<void>;
     subscribeListener(): void;
     unsubscribeListener(): void;
+    updateAdvancedOverlay(advancedOverlayJson: string): Promise<void>;
     private getJSONStringForView;
     private isSerializeable;
 }

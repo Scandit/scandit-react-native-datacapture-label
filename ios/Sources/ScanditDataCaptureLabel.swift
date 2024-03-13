@@ -6,6 +6,7 @@
 
 import Foundation
 import React
+import ScanditFrameworksCore
 import ScanditBarcodeCapture
 import ScanditDataCaptureCore
 import ScanditLabelCapture
@@ -72,9 +73,6 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
     internal let brushForLabelLock =
         CallbackLock<Brush>(name: ScanditDataCaptureLabelEvent.brushForLabel.rawValue)
 
-    // LabelCaptureBasicOverlayListener
-    internal var overlay: LabelCaptureBasicOverlay?
-
     // LabelCaptureAdvancedOverlayListener
     internal let viewForLabelLock =
         CallbackLock<JSView>(name: ScanditDataCaptureLabelEvent.viewForLabel.rawValue)
@@ -83,11 +81,43 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
     internal let offsetForLabelLock =
         CallbackLock<PointWithUnit>(name: ScanditDataCaptureLabelEvent.offsetForLabel.rawValue)
 
-    internal var advancedOverlay: LabelCaptureAdvancedOverlay?
+    
+    internal var modeEnabled = AtomicBool()
+
+    internal var context: DataCaptureContext?
+    internal var dataCaptureView: DataCaptureView?
+
+    internal var labelCapture: LabelCapture? {
+       willSet {
+           labelCapture?.removeListener(self)
+       }
+       didSet {
+           labelCapture?.addListener(self)
+       }
+    }
+    
+    internal var basicOverlay: LabelCaptureBasicOverlay? {
+       willSet {
+           basicOverlay?.delegate = nil
+       }
+       didSet {
+           basicOverlay?.delegate = self
+       }
+    }
+    
+    internal var advancedOverlay: LabelCaptureAdvancedOverlay? {
+       willSet {
+           advancedOverlay?.delegate = nil
+       }
+       didSet {
+           advancedOverlay?.delegate = self
+       }
+    }
 
     override init() {
         super.init()
         registerDeserializer()
+        DeserializationLifeCycleDispatcher.shared.attach(observer: self)
     }
 
     override class func requiresMainQueueSetup() -> Bool {
@@ -101,11 +131,17 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
     @objc override func invalidate() {
         super.invalidate()
         unregisterDeserializer()
+        DeserializationLifeCycleDispatcher.shared.detach(observer: self)
         capturedLabelViewCache.removeAll()
         lastCapturedLabels?.removeAll()
         lastFrameSequenceId = nil
-        overlay = nil
+        basicOverlay = nil
+        advancedOverlay = nil
         unlockLocks()
+    }
+
+    deinit {
+        invalidate()
     }
 
     internal func unlockLocks() {
@@ -139,4 +175,152 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
     @objc func unregisterListenerForAdvancedOverlayEvents() {
         // Empty on purpose
     }
+    
+    @objc(applyLabelCaptureModeSettings:resolve:reject:)
+    func applyLabelCaptureModeSettings(settingsJson: String,
+                                     resolve: @escaping RCTPromiseResolveBlock,
+                                     reject: @escaping RCTPromiseRejectBlock) {
+        guard let mode = labelCapture else {
+            resolve(nil)
+            return
+        }
+        
+        do {
+            let settings = try deserializer.settings(fromJSONString: settingsJson)
+            mode.apply(settings)
+            resolve(nil)
+        } catch {
+            reject("Something wrong happened while apply the new label capture settings.", error.localizedDescription, error)
+        }
+    }
+    
+    @objc(setModeEnabledState:)
+    func setModeEnabledState(enabled: Bool) {
+        modeEnabled.value = enabled
+        labelCapture?.isEnabled = enabled
+    }
+    
+    func onModeRemovedFromContext() {
+        labelCapture = nil
+        
+        if let basicOverlay = basicOverlay, let dataCaptureView = dataCaptureView {
+            dataCaptureView.removeOverlay(basicOverlay)
+        }
+        basicOverlay = nil
+        
+        if let advancedOverlay = self.advancedOverlay, let dataCaptureView = self.dataCaptureView {
+            dataCaptureView.removeOverlay(advancedOverlay)
+        }
+        self.advancedOverlay = nil
+    }
 }
+
+extension ScanditDataCaptureLabel: DeserializationLifeCycleObserver {
+    public func dataCaptureContext(deserialized context: DataCaptureContext?) {
+        self.context = context
+    }
+    
+    public func dataCaptureView(deserialized view: DataCaptureView?) {
+        dataCaptureView = view
+    }
+    
+    public func dataCaptureContext(addMode modeJson: String) throws {
+        if JSONValue(string: modeJson).string(forKey: "type") != "labelCapture" {
+            return
+        }
+        
+        guard let dcContext = context else {
+            return
+        }
+        do {
+            let mode = try deserializer.mode(fromJSONString: modeJson, with: dcContext)
+            dcContext.addMode(mode)
+        }catch {
+            print(error)
+        }
+    }
+    
+    public func dataCaptureContext(removeMode modeJson: String) {
+        if JSONValue(string: modeJson).string(forKey: "type") != "labelCapture" {
+            return
+        }
+        
+        guard let dcContext = context else {
+            return
+        }
+        
+        guard let mode = labelCapture else {
+            return
+        }
+        dcContext.removeMode(mode)
+        onModeRemovedFromContext()
+    }
+    
+    public func dataCaptureContextAllModeRemoved() {
+        onModeRemovedFromContext()
+    }
+    
+    public func didDisposeDataCaptureContext() {
+        context = nil
+        onModeRemovedFromContext()
+    }
+    
+    public func dataCaptureView(addOverlay overlayJson: String) throws {
+        let overlayType = JSONValue(string: overlayJson).string(forKey: "type")
+        if overlayType != "labelCaptureBasic" && overlayType != "labelCaptureAdvanced" {
+            return
+        }
+        
+        guard let mode = labelCapture else {
+            return
+        }
+        
+        try dispatchMainSync {
+            let overlay: DataCaptureOverlay = (overlayType == "labelCaptureBasic") ?
+            try deserializer.basicOverlay(fromJSONString: overlayJson, withMode: mode) :
+            try deserializer.advancedOverlay(fromJSONString: overlayJson, withMode: mode)
+            
+            dataCaptureView?.addOverlay(overlay)
+        }
+    }
+    
+    public func dataCaptureView(removeOverlay overlayJson: String) {
+        let overlayType = JSONValue(string: overlayJson).string(forKey: "type")
+        if overlayType != "labelCaptureBasic" && overlayType != "labelCaptureAdvanced" {
+            return
+        }
+        
+       if overlayType == "labelCaptureBasic" {
+            removeCurrentBasicaOverlay()
+        } else {
+             removeCurrentAdvancedOverlay()
+        }
+    }
+    
+    public func dataCaptureViewRemoveAllOverlays() {
+        removeCurrentBasicaOverlay()
+        removeCurrentAdvancedOverlay()
+    }
+    
+    internal func removeCurrentBasicaOverlay() {
+        guard let overlay = basicOverlay else {
+            return
+        }
+        
+        dispatchMainSync {
+            dataCaptureView?.removeOverlay(overlay)
+        }
+        basicOverlay = nil
+    }
+    
+    internal func removeCurrentAdvancedOverlay() {
+        guard let overlay = advancedOverlay else {
+            return
+        }
+        dispatchMainSync {
+            dataCaptureView?.removeOverlay(overlay)
+        }
+        advancedOverlay = nil
+    }
+}
+

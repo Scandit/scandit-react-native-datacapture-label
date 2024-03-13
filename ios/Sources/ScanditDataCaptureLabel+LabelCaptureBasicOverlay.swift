@@ -34,7 +34,7 @@ extension ScanditDataCaptureLabel {
             return
         }
 
-        guard let overlay = overlay else {
+        guard let overlay = basicOverlay else {
             let error = ScanditDataCaptureLabelError.basicOverlayNil
             reject(String(error.code), error.message, error)
             return
@@ -78,7 +78,7 @@ extension ScanditDataCaptureLabel {
             return
         }
 
-        guard let overlay = overlay else {
+        guard let overlay = basicOverlay else {
             let error = ScanditDataCaptureLabelError.basicOverlayNil
             reject(String(error.code), error.message, error)
             return
@@ -86,5 +86,18 @@ extension ScanditDataCaptureLabel {
 
         overlay.setBrush(brush, for: field, of: label)
         resolve(nil)
+    }
+    
+    @objc(updateLabelCaptureBasicOverlay:resolve:reject:)
+    func updateLabelCaptureBasicOverlay(overlayJson: String,
+                                        resolve: @escaping RCTPromiseResolveBlock,
+                                        reject: @escaping RCTPromiseRejectBlock) {
+        do {
+            removeCurrentBasicaOverlay()
+            try dataCaptureView(addOverlay: overlayJson)
+            resolve(nil)
+        } catch {
+            reject("Something wrong happened while updating the label capture basic overlay", error.localizedDescription, error)
+        }
     }
 }

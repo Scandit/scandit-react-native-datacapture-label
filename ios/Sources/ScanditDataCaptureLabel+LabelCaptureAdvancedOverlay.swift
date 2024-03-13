@@ -147,6 +147,19 @@ extension ScanditDataCaptureLabel {
 
         advancedOverlay.clearTrackedCapturedLabelViews()
     }
+    
+    @objc(updateLabelCaptureAdvancedOverlay:resolve:reject:)
+    func updateLabelCaptureAdvancedOverlay(overlayJson: String,
+                                           resolve: @escaping RCTPromiseResolveBlock,
+                                           reject: @escaping RCTPromiseRejectBlock) {
+        do {
+            removeCurrentAdvancedOverlay()
+            try dataCaptureContext(addMode: overlayJson)
+            resolve(nil)
+        } catch {
+            reject("Something wrong happened while updating the label capture advanced overlay", error.localizedDescription, error)
+        }
+    }
 }
 
 extension ScanditDataCaptureLabel: RCTRootViewDelegate {

@@ -9,21 +9,28 @@ package com.scandit.datacapture.reactnative.label
 import android.view.View
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
-import com.facebook.react.bridge.*
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.ReactContextBaseJavaModule
+import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEmitter
 import com.scandit.datacapture.core.capture.DataCaptureContext
-import com.scandit.datacapture.core.capture.DataCaptureContextListener
-import com.scandit.datacapture.core.capture.DataCaptureMode
 import com.scandit.datacapture.core.common.geometry.Anchor
 import com.scandit.datacapture.core.common.geometry.AnchorDeserializer
 import com.scandit.datacapture.core.common.geometry.PointWithUnit
 import com.scandit.datacapture.core.common.geometry.PointWithUnitDeserializer
 import com.scandit.datacapture.core.data.FrameData
 import com.scandit.datacapture.core.json.JsonValue
+import com.scandit.datacapture.core.ui.DataCaptureView
 import com.scandit.datacapture.core.ui.style.Brush
 import com.scandit.datacapture.core.ui.style.BrushDeserializer
 import com.scandit.datacapture.frameworks.core.deserialization.DeserializationLifecycleObserver
 import com.scandit.datacapture.frameworks.core.deserialization.Deserializers
+import com.scandit.datacapture.frameworks.core.utils.DefaultFrameworksLog
+import com.scandit.datacapture.frameworks.core.utils.DefaultMainThread
+import com.scandit.datacapture.frameworks.core.utils.FrameworksLog
+import com.scandit.datacapture.frameworks.core.utils.MainThread
 import com.scandit.datacapture.label.capture.LabelCapture
 import com.scandit.datacapture.label.capture.LabelCaptureListener
 import com.scandit.datacapture.label.capture.LabelCaptureSession
@@ -36,10 +43,16 @@ import com.scandit.datacapture.label.ui.overlay.LabelCaptureAdvancedOverlayListe
 import com.scandit.datacapture.label.ui.overlay.LabelCaptureBasicOverlay
 import com.scandit.datacapture.label.ui.overlay.LabelCaptureBasicOverlayListener
 import com.scandit.datacapture.reactnative.barcode.tracking.nativeViewFromJson
-import com.scandit.datacapture.reactnative.core.utils.*
+import com.scandit.datacapture.reactnative.core.utils.Error
+import com.scandit.datacapture.reactnative.core.utils.EventWithResult
+import com.scandit.datacapture.reactnative.core.utils.LazyEventEmitter
+import com.scandit.datacapture.reactnative.core.utils.POINT_WITH_UNIT_ZERO
+import com.scandit.datacapture.reactnative.core.utils.reject
+import com.scandit.datacapture.reactnative.core.utils.writableMap
 import com.scandit.datacapture.reactnative.label.data.defaults.SerializableLabelCaptureBasicOverlayDefaults
 import com.scandit.datacapture.reactnative.label.data.defaults.SerializableLabelCaptureDefaults
 import com.scandit.datacapture.reactnative.label.data.defaults.SerializableLabelDefaults
+import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ScanditDataCaptureLabelModule(
@@ -47,10 +60,11 @@ class ScanditDataCaptureLabelModule(
     @get:VisibleForTesting val labelCaptureDeserializer: LabelCaptureDeserializer =
         LabelCaptureDeserializer(),
     private val eventEmitter: RCTDeviceEventEmitter = LazyEventEmitter(reactContext),
-    sessionProvider: (() -> LabelCaptureSession?)? = null
+    sessionProvider: (() -> LabelCaptureSession?)? = null,
+    private val mainThread: MainThread = DefaultMainThread.getInstance(),
+    private val logger: FrameworksLog = DefaultFrameworksLog.getInstance()
 ) : ReactContextBaseJavaModule(reactContext),
     DeserializationLifecycleObserver.Observer,
-    DataCaptureContextListener,
     LabelCaptureDeserializerListener,
     LabelCaptureListener,
     LabelCaptureBasicOverlayListener,
@@ -94,8 +108,10 @@ class ScanditDataCaptureLabelModule(
         private const val FIELD_LABEL = "label"
         private const val FIELD_FIELD = "field"
 
-        private val ERROR_INVALID_SEQUENCE_ID =
-            Error(1, "The sequence id does not match the current sequence id.")
+        private const val MODE_TYPE = "labelCapture"
+        private const val ADVANCED_OVERLAY_TYPE = "labelCaptureAdvanced"
+        private const val BASIC_OVERLAY_TYPE = "labelCaptureBasic"
+
         private val ERROR_LABEL_NOT_FOUND = Error(2, "Label not found.")
         private val ERROR_FIELD_NOT_FOUND = Error(3, "Field not found.")
         private val ERROR_NULL_ADVANCED_OVERLAY =
@@ -127,6 +143,10 @@ class ScanditDataCaptureLabelModule(
     private var hasNativeBasicOverlayListeners: AtomicBoolean = AtomicBoolean(false)
     private var hasNativeAdvancedOverlayListeners: AtomicBoolean = AtomicBoolean(false)
 
+    private var dataCaptureContextRef: WeakReference<DataCaptureContext?> = WeakReference(null)
+
+    private var dataCaptureViewRef: WeakReference<DataCaptureView?> = WeakReference(null)
+
     private fun setHasNativeListeners(hasListeners: Boolean) {
         if (hasNativeListeners.getAndSet(hasListeners) && !hasListeners) {
             onSessionUpdated.onCancel()
@@ -147,12 +167,6 @@ class ScanditDataCaptureLabelModule(
             offsetForLabel.onCancel()
         }
     }
-
-    private var dataCaptureContext: DataCaptureContext? = null
-        private set(value) {
-            field?.removeListener(this)
-            field = value?.also { it.addListener(this) }
-        }
 
     @get:VisibleForTesting
     var labelCapture: LabelCapture? = null
@@ -313,24 +327,17 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setBrushForLabel(
-        brushJson: String,
-        sequenceId: Int,
+        brushJson: String?,
         labelId: Int,
         promise: Promise
     ) {
-        if (!isCurrentSequenceId(sequenceId)) {
-            promise.reject(ERROR_INVALID_SEQUENCE_ID)
-
-            return
-        }
-
         val label = session?.getLabelById(labelId) ?: run {
             promise.reject(ERROR_LABEL_NOT_FOUND)
 
             return
         }
 
-        val brush = BrushDeserializer.fromJson(brushJson)
+        val brush = if (brushJson != null) BrushDeserializer.fromJson(brushJson) else null
 
         labelCaptureBasicOverlay?.setBrushForLabel(brush, label)
         promise.resolve(null)
@@ -338,18 +345,11 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setBrushForFieldOfLabel(
-        brushJson: String,
-        sequenceId: Int,
+        brushJson: String?,
         fieldName: String,
         labelId: Int,
         promise: Promise
     ) {
-        if (!isCurrentSequenceId(sequenceId)) {
-            promise.reject(ERROR_INVALID_SEQUENCE_ID)
-
-            return
-        }
-
         val label = session?.getLabelById(labelId) ?: run {
             promise.reject(ERROR_LABEL_NOT_FOUND)
 
@@ -362,18 +362,10 @@ class ScanditDataCaptureLabelModule(
             return
         }
 
-        val brush = BrushDeserializer.fromJson(brushJson)
+        val brush = if (brushJson != null) BrushDeserializer.fromJson(brushJson) else null
 
         labelCaptureBasicOverlay?.setBrushForField(brush, field, label)
         promise.resolve(null)
-    }
-
-    private fun isCurrentSequenceId(sequenceId: Int): Boolean {
-        return session?.let {
-            val currentSequenceId = it.frameSequenceId.toInt()
-
-            currentSequenceId == sequenceId
-        } ?: false
     }
 
     private fun LabelCaptureSession.getLabelById(id: Int): CapturedLabel? =
@@ -381,27 +373,6 @@ class ScanditDataCaptureLabelModule(
 
     private fun CapturedLabel.getFieldNamed(name: String): LabelField? =
         fields.find { it.name == name }
-
-    override fun onDataCaptureContextDisposed() {
-        dataCaptureContext = null
-        labelCapture = null
-        labelCaptureBasicOverlay = null
-    }
-
-    override fun onDataCaptureContextDeserialized(dataCaptureContext: DataCaptureContext) {
-        this.dataCaptureContext = dataCaptureContext
-    }
-
-    override fun onModeRemoved(
-        dataCaptureContext: DataCaptureContext,
-        dataCaptureMode: DataCaptureMode
-    ) {
-        reactContext.runOnNativeModulesQueueThread {
-            if (dataCaptureContext == this.dataCaptureContext && dataCaptureMode == labelCapture) {
-                labelCapture = null
-            }
-        }
-    }
 
     override fun onModeDeserializationFinished(
         deserializer: LabelCaptureDeserializer,
@@ -519,17 +490,10 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setViewForCapturedLabel(
-        viewJson: String,
-        sequenceId: Int,
+        viewJson: String?,
         labelId: Int,
         promise: Promise
     ) {
-        if (!isCurrentSequenceId(sequenceId)) {
-            promise.reject(ERROR_INVALID_SEQUENCE_ID)
-
-            return
-        }
-
         val label = session?.getLabelById(labelId) ?: run {
             promise.reject(ERROR_LABEL_NOT_FOUND)
 
@@ -553,16 +517,9 @@ class ScanditDataCaptureLabelModule(
     @ReactMethod
     fun setAnchorForCapturedLabel(
         anchorJson: String,
-        sequenceId: Int,
         labelId: Int,
         promise: Promise
     ) {
-        if (!isCurrentSequenceId(sequenceId)) {
-            promise.reject(ERROR_INVALID_SEQUENCE_ID)
-
-            return
-        }
-
         val label = session?.getLabelById(labelId) ?: run {
             promise.reject(ERROR_LABEL_NOT_FOUND)
 
@@ -586,16 +543,9 @@ class ScanditDataCaptureLabelModule(
     @ReactMethod
     fun setOffsetForCapturedLabel(
         offsetJson: String,
-        sequenceId: Int,
         labelId: Int,
         promise: Promise
     ) {
-        if (!isCurrentSequenceId(sequenceId)) {
-            promise.reject(ERROR_INVALID_SEQUENCE_ID)
-
-            return
-        }
-
         val label = session?.getLabelById(labelId) ?: run {
             promise.reject(ERROR_LABEL_NOT_FOUND)
 
@@ -641,4 +591,140 @@ class ScanditDataCaptureLabelModule(
     fun finishOffsetForLabelCallback(offsetJson: String) {
         offsetForLabel.onResult(PointWithUnitDeserializer.fromJson(offsetJson))
     }
+
+    override fun onDataCaptureContextDisposed() {
+        dataCaptureContextRef = WeakReference(null)
+    }
+
+    override fun onDataCaptureContextDeserialized(dataCaptureContext: DataCaptureContext) {
+        dataCaptureContextRef = WeakReference(dataCaptureContext)
+    }
+
+    override fun onAddModeToContext(modeJson: String) {
+        if (modeJson.getJsonValueTypeAttribute() != MODE_TYPE) return
+
+        val dcContext = dataCaptureContextRef.get() ?: run {
+            logger.error(
+                "Unable to add the LabelCaptureMode to the DataCaptureContext, " +
+                    "the context is null."
+            )
+            return
+        }
+
+        val mode = labelCaptureDeserializer.modeFromJson(dcContext, modeJson)
+        dcContext.addMode(mode)
+    }
+
+    override fun onRemoveModeFromContext(modeJson: String) {
+        if (modeJson.getJsonValueTypeAttribute() != MODE_TYPE) return
+
+        val dcContext = dataCaptureContextRef.get() ?: run {
+            logger.error(
+                "Unable to remove the LabelCaptureMode from the DataCaptureContext, " +
+                    "the context is null."
+            )
+            return
+        }
+        val mode = labelCapture ?: run {
+            logger.error(
+                "Unable to add the LabelCaptureMode from the DataCaptureContext, " +
+                    "the mode is null."
+            )
+            return
+        }
+        dcContext.removeMode(mode)
+        onModeRemovedFromContext()
+    }
+
+    override fun onAllModesRemovedFromContext() {
+        onModeRemovedFromContext()
+    }
+
+    override fun onAddOverlayToView(overlayJson: String) {
+        val overlayType = overlayJson.getJsonValueTypeAttribute()
+        if (overlayType != ADVANCED_OVERLAY_TYPE && overlayType != BASIC_OVERLAY_TYPE) return
+
+        val mode = labelCapture
+        if (mode == null) {
+            logger.error(
+                "Unable to add the $overlayType to the DataCaptureContext, " +
+                    "the mode is null."
+            )
+            return
+        }
+
+        if (overlayType == ADVANCED_OVERLAY_TYPE) {
+            labelCaptureDeserializer.advancedOverlayFromJson(mode, overlayJson).also {
+                mainThread.runOnMainThread {
+                    dataCaptureViewRef.get()?.addOverlay(it)
+                }
+            }
+        } else {
+            labelCaptureDeserializer.basicOverlayFromJson(mode, overlayJson).also {
+                mainThread.runOnMainThread {
+                    dataCaptureViewRef.get()?.addOverlay(it)
+                }
+            }
+        }
+    }
+
+    override fun onRemoveOverlayFromView(overlayJson: String) {
+        val overlayType = overlayJson.getJsonValueTypeAttribute()
+        if (overlayType != ADVANCED_OVERLAY_TYPE && overlayType != BASIC_OVERLAY_TYPE) return
+
+        if (overlayType == ADVANCED_OVERLAY_TYPE) {
+            removeCurrentAdvancedOverlay()
+        } else {
+            removeCurrentBasicOverlay()
+        }
+    }
+
+    override fun onRemoveAllOverlays() {
+        removeCurrentBasicOverlay()
+        removeCurrentAdvancedOverlay()
+    }
+
+    override fun onDataCaptureViewDeserialized(dataCaptureView: DataCaptureView?) {
+        this.dataCaptureViewRef = WeakReference(dataCaptureView)
+        if (dataCaptureView == null) {
+            onRemoveAllOverlays()
+            return
+        }
+
+        labelCaptureBasicOverlay?.let {
+            dataCaptureView.addOverlay(it)
+        }
+
+        labelCaptureAdvancedOverlay?.let {
+            dataCaptureView.addOverlay(it)
+        }
+    }
+
+    private fun removeCurrentBasicOverlay() {
+        labelCaptureBasicOverlay?.let {
+            mainThread.runOnMainThread {
+                dataCaptureViewRef.get()?.removeOverlay(it)
+            }
+            it.listener = null
+        }
+        labelCaptureBasicOverlay = null
+    }
+
+    private fun removeCurrentAdvancedOverlay() {
+        labelCaptureAdvancedOverlay?.let {
+            mainThread.runOnMainThread {
+                dataCaptureViewRef.get()?.removeOverlay(it)
+            }
+            it.listener = null
+        }
+        labelCaptureAdvancedOverlay = null
+    }
+
+    private fun onModeRemovedFromContext() {
+        labelCapture = null
+        onRemoveAllOverlays()
+    }
+
+    private fun String.getJsonValueTypeAttribute(): String =
+        JsonValue(this).getByKeyAsString("type", "")
 }

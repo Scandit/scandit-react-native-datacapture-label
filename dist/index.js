@@ -1,7 +1,8 @@
-import { nameForSerialization, serializationDefault, DefaultSerializeable, ignoreFromSerialization } from 'scandit-react-native-datacapture-core/dist/core';
+import { nameForSerialization, serializationDefault, ignoreFromSerializationIfNull, DefaultSerializeable, ignoreFromSerialization, Point, Size } from 'scandit-react-native-datacapture-core/dist/core';
 import { NativeModules, NativeEventEmitter } from 'react-native';
 import { Barcode } from 'scandit-react-native-datacapture-barcode';
-import { CameraSettings, Color, NoViewfinder, Quadrilateral, Brush, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
+import { CameraSettings, Color, NoViewfinder, Quadrilateral, Brush, Rect, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
+import { getBarcodeDefaults } from 'scandit-react-native-datacapture-barcode/dist/barcode';
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -143,8 +144,8 @@ class LabelCaptureSession {
 }
 
 // tslint:disable:variable-name
-const NativeModule$3 = NativeModules.ScanditDataCaptureLabel;
-const EventEmitter$2 = new NativeEventEmitter(NativeModule$3);
+const NativeModule$4 = NativeModules.ScanditDataCaptureLabel;
+const EventEmitter$2 = new NativeEventEmitter(NativeModule$4);
 // tslint:enable:variable-name
 var LabelCaptureListenerEventName;
 (function (LabelCaptureListenerEventName) {
@@ -159,16 +160,16 @@ class LabelCaptureListenerProxy {
         return proxy;
     }
     subscribeListener() {
-        NativeModule$3.registerListenerForEvents();
+        NativeModule$4.registerListenerForEvents();
         const listener = EventEmitter$2.addListener(LabelCaptureListenerEventName.didUpdateSession, (body) => {
             const session = LabelCaptureSession.fromJSON(JSON.parse(body.session));
             this.notifyListenersOfDidUpdateSession(session);
-            NativeModule$3.finishDidUpdateSessionCallback(this.mode.isEnabled);
+            NativeModule$4.finishDidUpdateSessionCallback(this.mode.isEnabled);
         });
         this.nativeListeners.push(listener);
     }
     unsubscribeListener() {
-        NativeModule$3.unregisterListenerForEvents();
+        NativeModule$4.unregisterListenerForEvents();
         this.nativeListeners.forEach(listener => listener.remove());
         this.nativeListeners = [];
     }
@@ -181,6 +182,18 @@ class LabelCaptureListenerProxy {
             }
         });
         mode.isInListenerCallback = false;
+    }
+}
+
+// tslint:disable:variable-name
+const NativeModule$3 = NativeModules.ScanditDataCaptureLabel;
+// tslint:enable:variable-name
+class LabelCaptureProxy {
+    setModeEnabledState(enabled) {
+        return NativeModule$3.setModeEnabledState(enabled);
+    }
+    updateLabelCaptureSettings(settingsJson) {
+        return NativeModule$3.applyLabelCaptureModeSettings(settingsJson);
     }
 }
 
@@ -218,17 +231,6 @@ const Defaults = {
 };
 
 class LabelCapture extends DefaultSerializeable {
-    get isEnabled() {
-        return this._isEnabled;
-    }
-    set isEnabled(isEnabled) {
-        this._isEnabled = isEnabled;
-        if (!this.isInListenerCallback) {
-            // If we're "in" a listener callback, we don't want to deserialize the context to update the enabled state,
-            // but rather pass that back to be applied in the native callback.
-            this.didChange();
-        }
-    }
     get context() {
         return this._context;
     }
@@ -237,6 +239,13 @@ class LabelCapture extends DefaultSerializeable {
     }
     type = 'labelCapture';
     _isEnabled = true;
+    get isEnabled() {
+        return this._isEnabled;
+    }
+    set isEnabled(isEnabled) {
+        this._isEnabled = isEnabled;
+        this.modeProxy.setModeEnabledState(isEnabled);
+    }
     settings;
     privateContext = null;
     get _context() {
@@ -254,6 +263,7 @@ class LabelCapture extends DefaultSerializeable {
     listeners = [];
     listenerProxy;
     isInListenerCallback = false;
+    modeProxy;
     static forContext(context, settings) {
         const mode = new LabelCapture();
         mode.settings = settings;
@@ -265,10 +275,11 @@ class LabelCapture extends DefaultSerializeable {
     constructor() {
         super();
         this.listenerProxy = LabelCaptureListenerProxy.forLabelCapture(this);
+        this.modeProxy = new LabelCaptureProxy();
     }
     applySettings(settings) {
         this.settings = settings;
-        return this.didChange();
+        return this.modeProxy.updateLabelCaptureSettings(JSON.stringify(settings.toJSON()));
     }
     addListener(listener) {
         if (this.listeners.includes(listener)) {
@@ -282,17 +293,9 @@ class LabelCapture extends DefaultSerializeable {
         }
         this.listeners.splice(this.listeners.indexOf(listener), 1);
     }
-    didChange() {
-        if (this.context) {
-            return this.context.update();
-        }
-        else {
-            return Promise.resolve();
-        }
-    }
 }
 __decorate([
-    nameForSerialization('enabled')
+    ignoreFromSerialization
 ], LabelCapture.prototype, "_isEnabled", void 0);
 __decorate([
     ignoreFromSerialization
@@ -306,6 +309,9 @@ __decorate([
 __decorate([
     ignoreFromSerialization
 ], LabelCapture.prototype, "isInListenerCallback", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelCapture.prototype, "modeProxy", void 0);
 
 // tslint:disable:variable-name
 const NativeModule$1 = NativeModules.ScanditDataCaptureLabel;
@@ -326,10 +332,10 @@ class LabelCaptureBasicOverlayProxy {
         return proxy;
     }
     setBrushForFieldOfLabel(brush, field, label) {
-        return NativeModule$1.setBrushForFieldOfLabel(JSON.stringify(brush.toJSON()), label.frameSequenceID, field.name, label.trackingID);
+        return NativeModule$1.setBrushForFieldOfLabel(JSON.stringify(brush.toJSON()), field.name, label.trackingID);
     }
     setBrushForLabel(brush, label) {
-        return NativeModule$1.setBrushForLabel(JSON.stringify(brush.toJSON()), label.frameSequenceID, label.trackingID);
+        return NativeModule$1.setBrushForLabel(JSON.stringify(brush.toJSON()), label.trackingID);
     }
     subscribeListener() {
         NativeModule$1.registerListenerForBasicOverlayEvents();
@@ -365,6 +371,9 @@ class LabelCaptureBasicOverlayProxy {
         this.nativeListeners.forEach(listener => listener.remove());
         this.nativeListeners = [];
     }
+    updateBasicOverlay(basicOverlayJson) {
+        return NativeModule$1.updateLabelCaptureBasicOverlay(basicOverlayJson);
+    }
 }
 
 class LabelCaptureBasicOverlay extends DefaultSerializeable {
@@ -398,7 +407,7 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     }
     set predictedFieldBrush(newBrush) {
         this._predictedFieldBrush = newBrush;
-        this.mode.didChange();
+        this.proxy.updateBasicOverlay(JSON.stringify(this.toJSON()));
     }
     _capturedFieldBrush = LabelCaptureBasicOverlay.defaultCapturedFieldBrush.copy;
     get capturedFieldBrush() {
@@ -406,7 +415,7 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     }
     set capturedFieldBrush(newBrush) {
         this._capturedFieldBrush = newBrush;
-        this.mode.didChange();
+        this.proxy.updateBasicOverlay(JSON.stringify(this.toJSON()));
     }
     _labelBrush = LabelCaptureBasicOverlay.defaultLabelBrush.copy;
     get labelBrush() {
@@ -414,7 +423,7 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     }
     set labelBrush(newBrush) {
         this._labelBrush = newBrush;
-        this.mode.didChange();
+        this.proxy.updateBasicOverlay(JSON.stringify(this.toJSON()));
     }
     _shouldShowScanAreaGuides = false;
     listener = null;
@@ -424,7 +433,7 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     }
     set shouldShowScanAreaGuides(shouldShow) {
         this._shouldShowScanAreaGuides = shouldShow;
-        this.mode.didChange();
+        this.proxy.updateBasicOverlay(JSON.stringify(this.toJSON()));
     }
     _viewfinder = null;
     get viewfinder() {
@@ -432,7 +441,7 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     }
     set viewfinder(newViewfinder) {
         this._viewfinder = newViewfinder;
-        this.mode.didChange();
+        this.proxy.updateBasicOverlay(JSON.stringify(this.toJSON()));
     }
     static withLabelCapture(labelCapture) {
         return LabelCaptureBasicOverlay.withLabelCaptureForView(labelCapture, null);
@@ -504,13 +513,13 @@ class LabelCaptureAdvancedOverlayProxy {
         return proxy;
     }
     setViewForCapturedLabel(label, view) {
-        return NativeModule.setViewForCapturedLabel(this.getJSONStringForView(view), label.frameSequenceID, label.trackingID);
+        return NativeModule.setViewForCapturedLabel(this.getJSONStringForView(view), label.trackingID);
     }
     setAnchorForCapturedLabel(label, anchor) {
-        return NativeModule.setAnchorForCapturedLabel(anchor, label.frameSequenceID, label.trackingID);
+        return NativeModule.setAnchorForCapturedLabel(anchor, label.trackingID);
     }
     setOffsetForCapturedLabel(label, offset) {
-        return NativeModule.setOffsetForCapturedLabel(JSON.stringify(offset.toJSON()), label.frameSequenceID, label.trackingID);
+        return NativeModule.setOffsetForCapturedLabel(JSON.stringify(offset.toJSON()), label.trackingID);
     }
     clearCapturedLabelViews() {
         return NativeModule.clearCapturedLabelViews();
@@ -549,6 +558,9 @@ class LabelCaptureAdvancedOverlayProxy {
         NativeModule.unregisterListenerForAdvancedOverlayEvents();
         this.nativeListeners.forEach(listener => listener.remove());
         this.nativeListeners = [];
+    }
+    updateAdvancedOverlay(advancedOverlayJson) {
+        return NativeModule.updateLabelCaptureAdvancedOverlay(advancedOverlayJson);
     }
     getJSONStringForView(view) {
         if (view == null) {
@@ -612,7 +624,7 @@ class LabelCaptureAdvancedOverlay extends DefaultSerializeable {
     }
     set shouldShowScanAreaGuides(shouldShow) {
         this._shouldShowScanAreaGuides = shouldShow;
-        this.mode.didChange();
+        this.proxy.updateAdvancedOverlay(JSON.stringify(this.toJSON()));
     }
     type = 'labelCaptureAdvanced';
     proxy;
@@ -3470,11 +3482,23 @@ class LabelCaptureAdvancedOverlayView extends React.Component {
 }
 
 class LabelCaptureSettings extends DefaultSerializeable {
+    _definitions = [];
+    properties = {};
     static fromJSON(json) {
+        // tslint:disable-next-line:no-console
+        console.warn('Deprecated in favour of LabelCaptureSettings.settingsFromLabelDefinitions.');
         const settings = new LabelCaptureSettings();
         Object.keys(json).forEach(key => {
             settings[key] = json[key];
         });
+        return settings;
+    }
+    static settingsFromLabelDefinitions(definitions, properties) {
+        const settings = new LabelCaptureSettings();
+        settings._definitions = definitions;
+        if (properties) {
+            settings.properties = properties;
+        }
         return settings;
     }
     constructor() {
@@ -3487,5 +3511,449 @@ class LabelCaptureSettings extends DefaultSerializeable {
         return this[name];
     }
 }
+__decorate([
+    nameForSerialization('labelDefinitions')
+], LabelCaptureSettings.prototype, "_definitions", void 0);
 
-export { CapturedLabel, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayView, LabelCaptureBasicOverlay, LabelCaptureSession, LabelCaptureSettings, LabelField, LabelFieldState, LabelFieldType };
+class LabelDefinition extends DefaultSerializeable {
+    _name = '';
+    _fields = [];
+    _hiddenProperties = {};
+    get name() {
+        return this._name;
+    }
+    get fields() {
+        return this._fields;
+    }
+    set fields(values) {
+        this._fields = values;
+    }
+    get hiddenProperties() {
+        return this._hiddenProperties;
+    }
+    set hiddenProperties(newValue) {
+        for (const key in this._hiddenProperties) {
+            if (Object.prototype.hasOwnProperty.call(this._hiddenProperties, key)) {
+                delete this[key];
+            }
+        }
+        for (const key in newValue) {
+            if (Object.prototype.hasOwnProperty.call(newValue, key)) {
+                const item = newValue[key];
+                this[key] = item;
+            }
+        }
+        this._hiddenProperties = newValue;
+    }
+    static fromJSON(json) {
+        const definition = new LabelDefinition(json.name);
+        definition._fields = json.fields;
+        definition.hiddenProperties = json.hidden_properties;
+        return definition;
+    }
+    constructor(name) {
+        super();
+        this._name = name;
+    }
+}
+__decorate([
+    nameForSerialization('name')
+], LabelDefinition.prototype, "_name", void 0);
+__decorate([
+    nameForSerialization('fields')
+], LabelDefinition.prototype, "_fields", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelDefinition.prototype, "_hiddenProperties", void 0);
+
+class LabelFieldDefinition extends DefaultSerializeable {
+    _name;
+    _patterns = [];
+    _optional = false;
+    _hiddenProperties = {};
+    get name() {
+        return this._name;
+    }
+    get patterns() {
+        return this._patterns;
+    }
+    set patterns(value) {
+        this._patterns = value;
+    }
+    get optional() {
+        return this._optional;
+    }
+    set optional(value) {
+        this._optional = value;
+    }
+    get hiddenProperties() {
+        return this._hiddenProperties;
+    }
+    set hiddenProperties(newValue) {
+        for (const key in this._hiddenProperties) {
+            if (Object.prototype.hasOwnProperty.call(this._hiddenProperties, key)) {
+                delete this[key];
+            }
+        }
+        for (const key in newValue) {
+            if (Object.prototype.hasOwnProperty.call(newValue, key)) {
+                const item = newValue[key];
+                this[key] = item;
+            }
+        }
+        this._hiddenProperties = newValue;
+    }
+    constructor(name) {
+        super();
+        this._name = name;
+    }
+}
+__decorate([
+    nameForSerialization('name')
+], LabelFieldDefinition.prototype, "_name", void 0);
+__decorate([
+    nameForSerialization('patterns')
+], LabelFieldDefinition.prototype, "_patterns", void 0);
+__decorate([
+    nameForSerialization('optional')
+], LabelFieldDefinition.prototype, "_optional", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelFieldDefinition.prototype, "_hiddenProperties", void 0);
+
+var LabelFieldLocationType;
+(function (LabelFieldLocationType) {
+    LabelFieldLocationType["TopLeft"] = "topLeft";
+    LabelFieldLocationType["TopRight"] = "topRight";
+    LabelFieldLocationType["BottomRight"] = "bottomRight";
+    LabelFieldLocationType["BottomLeft"] = "bottomLeft";
+    LabelFieldLocationType["Top"] = "top";
+    LabelFieldLocationType["Right"] = "right";
+    LabelFieldLocationType["Bottom"] = "bottom";
+    LabelFieldLocationType["Left"] = "left";
+    LabelFieldLocationType["Center"] = "center";
+    LabelFieldLocationType["WholeLabel"] = "wholeLabel";
+})(LabelFieldLocationType || (LabelFieldLocationType = {}));
+
+class LabelFieldLocation extends DefaultSerializeable {
+    _rect = null;
+    _type = null;
+    static forRect(rect) {
+        const location = new LabelFieldLocation();
+        location._rect = rect;
+        return location;
+    }
+    static for(left, top, right, bottom) {
+        const location = new LabelFieldLocation();
+        location._rect = new Rect(new Point(left, top), new Size(right - left, bottom - top));
+        return location;
+    }
+    static topLeft() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.TopLeft;
+        return location;
+    }
+    static topRight() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.TopRight;
+        return location;
+    }
+    static bottomLeft() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.BottomLeft;
+        return location;
+    }
+    static bottomRight() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.BottomRight;
+        return location;
+    }
+    static top() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.Top;
+        return location;
+    }
+    static bottom() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.Bottom;
+        return location;
+    }
+    static left() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.Left;
+        return location;
+    }
+    static right() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.Right;
+        return location;
+    }
+    static center() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.Center;
+        return location;
+    }
+    static wholeLabel() {
+        const location = new LabelFieldLocation();
+        location._type = LabelFieldLocationType.WholeLabel;
+        return location;
+    }
+}
+__decorate([
+    nameForSerialization('rect')
+], LabelFieldLocation.prototype, "_rect", void 0);
+__decorate([
+    nameForSerialization('type'),
+    ignoreFromSerializationIfNull
+], LabelFieldLocation.prototype, "_type", void 0);
+
+class BarcodeField extends LabelFieldDefinition {
+    _symbologies;
+    _symbologySettings;
+    get symbologySettings() {
+        return this._symbologySettings;
+    }
+    constructor(name, symbologies) {
+        super(name);
+        this._symbologySettings = symbologies;
+        this._symbologies = symbologies.reduce((acc, item) => {
+            acc[item.symbology.toString()] = item;
+            return acc;
+        }, {});
+    }
+}
+__decorate([
+    nameForSerialization('symbologies'),
+    ignoreFromSerializationIfNull
+], BarcodeField.prototype, "_symbologies", void 0);
+__decorate([
+    ignoreFromSerialization
+], BarcodeField.prototype, "_symbologySettings", void 0);
+
+class TextField extends LabelFieldDefinition {
+}
+
+class CustomBarcode extends BarcodeField {
+    location = null;
+    _dataTypePatterns = [];
+    _fieldType = 'customBarcode';
+    static initWithNameAndSymbologySettings(name, symbologySettings) {
+        return new CustomBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbologies(name, symbologies) {
+        const symbologySettings = Object.values(symbologies).map(symbology => {
+            const symbologyObj = CustomBarcode.barcodeDefaults.SymbologySettings[symbology];
+            symbologyObj.isEnabled = true;
+            return symbologyObj;
+        });
+        return new CustomBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbology(name, symbology) {
+        return CustomBarcode.initWithNameAndSymbologies(name, [symbology]);
+    }
+    constructor(name, symbologies) {
+        super(name, symbologies);
+    }
+    get dataTypePatterns() {
+        return this._dataTypePatterns;
+    }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
+    }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
+}
+__decorate([
+    nameForSerialization('location')
+], CustomBarcode.prototype, "location", void 0);
+__decorate([
+    nameForSerialization('dataTypePatterns')
+], CustomBarcode.prototype, "_dataTypePatterns", void 0);
+__decorate([
+    nameForSerialization('fieldType')
+], CustomBarcode.prototype, "_fieldType", void 0);
+
+class CustomText extends TextField {
+    location = null;
+    _dataTypePatterns = [];
+    _fieldType = 'customText';
+    constructor(name) {
+        super(name);
+    }
+    get dataTypePatterns() {
+        return this._dataTypePatterns;
+    }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
+    }
+}
+__decorate([
+    nameForSerialization('location')
+], CustomText.prototype, "location", void 0);
+__decorate([
+    nameForSerialization('dataTypePatterns')
+], CustomText.prototype, "_dataTypePatterns", void 0);
+__decorate([
+    nameForSerialization('fieldType')
+], CustomText.prototype, "_fieldType", void 0);
+
+class SerialNumberBarcode extends BarcodeField {
+    _fieldType = 'serialNumberBarcode';
+    static initWithNameAndSymbologySettings(name, symbologySettings) {
+        return new SerialNumberBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbologies(name, symbologies) {
+        const symbologySettings = Object.values(symbologies).map(symbology => {
+            const symbologyObj = SerialNumberBarcode.barcodeDefaults.SymbologySettings[symbology];
+            symbologyObj.isEnabled = true;
+            return symbologyObj;
+        });
+        return new SerialNumberBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbology(name, symbology) {
+        return SerialNumberBarcode.initWithNameAndSymbologies(name, [symbology]);
+    }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
+    constructor(name, symbologies) {
+        super(name, symbologies);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], SerialNumberBarcode.prototype, "_fieldType", void 0);
+
+class PartNumberBarcode extends BarcodeField {
+    _fieldType = 'partNumberBarcode';
+    static initWithNameAndSymbologySettings(name, symbologySettings) {
+        return new PartNumberBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbologies(name, symbologies) {
+        const symbologySettings = Object.values(symbologies).map(symbology => {
+            const symbologyObj = PartNumberBarcode.barcodeDefaults.SymbologySettings[symbology];
+            symbologyObj.isEnabled = true;
+            return symbologyObj;
+        });
+        return new PartNumberBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbology(name, symbology) {
+        return PartNumberBarcode.initWithNameAndSymbologies(name, [symbology]);
+    }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
+    constructor(name, symbologies) {
+        super(name, symbologies);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], PartNumberBarcode.prototype, "_fieldType", void 0);
+
+class ImeiOneBarcode extends BarcodeField {
+    _fieldType = 'imeiOneBarcode';
+    static initWithNameAndSymbologySettings(name, symbologySettings) {
+        return new ImeiOneBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbologies(name, symbologies) {
+        const symbologySettings = Object.values(symbologies).map(symbology => {
+            const symbologyObj = ImeiOneBarcode.barcodeDefaults.SymbologySettings[symbology];
+            symbologyObj.isEnabled = true;
+            return symbologyObj;
+        });
+        return new ImeiOneBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbology(name, symbology) {
+        return ImeiOneBarcode.initWithNameAndSymbologies(name, [symbology]);
+    }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
+    constructor(name, symbologies) {
+        super(name, symbologies);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], ImeiOneBarcode.prototype, "_fieldType", void 0);
+
+class ImeiTwoBarcode extends BarcodeField {
+    _fieldType = 'imeiTwoBarcode';
+    static initWithNameAndSymbologySettings(name, symbologySettings) {
+        return new ImeiTwoBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbologies(name, symbologies) {
+        const symbologySettings = Object.values(symbologies).map(symbology => {
+            const symbologyObj = ImeiTwoBarcode.barcodeDefaults.SymbologySettings[symbology];
+            symbologyObj.isEnabled = true;
+            return symbologyObj;
+        });
+        return new ImeiTwoBarcode(name, symbologySettings);
+    }
+    static initWithNameAndSymbology(name, symbology) {
+        return ImeiTwoBarcode.initWithNameAndSymbologies(name, [symbology]);
+    }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
+    constructor(name, symbologies) {
+        super(name, symbologies);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], ImeiTwoBarcode.prototype, "_fieldType", void 0);
+
+class UnitPriceText extends TextField {
+    _fieldType = 'unitPriceText';
+    constructor(name) {
+        super(name);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], UnitPriceText.prototype, "_fieldType", void 0);
+
+class TotalPriceText extends TextField {
+    _fieldType = 'totalPriceText';
+    constructor(name) {
+        super(name);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], TotalPriceText.prototype, "_fieldType", void 0);
+
+class WeightText extends TextField {
+    _fieldType = 'weightText';
+    constructor(name) {
+        super(name);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], WeightText.prototype, "_fieldType", void 0);
+
+class PackingDateText extends TextField {
+    _fieldType = 'packingDateText';
+    constructor(name) {
+        super(name);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], PackingDateText.prototype, "_fieldType", void 0);
+
+class ExpiryDateText extends TextField {
+    _fieldType = 'expiryDateText';
+    constructor(name) {
+        super(name);
+    }
+}
+__decorate([
+    nameForSerialization('fieldType')
+], ExpiryDateText.prototype, "_fieldType", void 0);
+
+export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayView, LabelCaptureBasicOverlay, LabelCaptureSession, LabelCaptureSettings, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText };
