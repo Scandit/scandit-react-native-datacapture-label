@@ -60,17 +60,12 @@ android {
 }
 
 dependencies {
-    def sdk_version = "6.23.1"
+    def sdk_version = "6.22.2"
 
     println("Version of the native sdk used in this build: ${safeExtGet('global_sdk_version', sdk_version)}")
     api project(path: ':scandit-react-native-datacapture-core')
     api project(path: ':scandit-react-native-datacapture-barcode')
-
-    if (findProject(':scandit-datacapture-frameworks-label') != null) {
-        api project(":scandit-datacapture-frameworks-label")
-    } else {
-        api "com.scandit.datacapture.frameworks:label:${safeExtGet('global_sdk_version', sdk_version)}"
-    }
+    api "com.scandit.datacapture:label:${safeExtGet('global_sdk_version', sdk_version)}"
 
     // For < 0.71, this will be from the local maven repo
     // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin

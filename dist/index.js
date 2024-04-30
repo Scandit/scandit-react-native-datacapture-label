@@ -149,7 +149,7 @@ const EventEmitter$2 = new NativeEventEmitter(NativeModule$4);
 // tslint:enable:variable-name
 var LabelCaptureListenerEventName;
 (function (LabelCaptureListenerEventName) {
-    LabelCaptureListenerEventName["didUpdateSession"] = "LabelCaptureListener.didUpdateSession";
+    LabelCaptureListenerEventName["didUpdateSession"] = "labelCaptureListener-didUpdateSession";
 })(LabelCaptureListenerEventName || (LabelCaptureListenerEventName = {}));
 class LabelCaptureListenerProxy {
     mode;
@@ -162,8 +162,7 @@ class LabelCaptureListenerProxy {
     subscribeListener() {
         NativeModule$4.registerListenerForEvents();
         const listener = EventEmitter$2.addListener(LabelCaptureListenerEventName.didUpdateSession, (body) => {
-            const payload = JSON.parse(body);
-            const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
+            const session = LabelCaptureSession.fromJSON(JSON.parse(body.session));
             this.notifyListenersOfDidUpdateSession(session);
             NativeModule$4.finishDidUpdateSessionCallback(this.mode.isEnabled);
         });
@@ -186,59 +185,52 @@ class LabelCaptureListenerProxy {
     }
 }
 
-// tslint:disable-next-line:variable-name
+// tslint:disable:variable-name
 const NativeModule$3 = NativeModules.ScanditDataCaptureLabel;
+// tslint:enable:variable-name
+class LabelCaptureProxy {
+    setModeEnabledState(enabled) {
+        return NativeModule$3.setModeEnabledState(enabled);
+    }
+    updateLabelCaptureSettings(settingsJson) {
+        return NativeModule$3.applyLabelCaptureModeSettings(settingsJson);
+    }
+}
+
+// tslint:disable-next-line:variable-name
+const NativeModule$2 = NativeModules.ScanditDataCaptureLabel;
 // tslint:disable-next-line:variable-name
 const Defaults = {
     LabelCapture: {
         RecommendedCameraSettings: CameraSettings
-            .fromJSON(NativeModule$3.Defaults.LabelCapture.RecommendedCameraSettings),
+            .fromJSON(NativeModule$2.Defaults.LabelCapture.RecommendedCameraSettings),
         LabelCaptureBasicOverlay: {
             DefaultPredictedFieldBrush: {
                 fillColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.fillColor),
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.fillColor),
                 strokeColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.strokeColor),
-                strokeWidth: NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.strokeWidth,
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.strokeColor),
+                strokeWidth: NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultPredictedFieldBrush.strokeWidth,
             },
             DefaultCapturedFieldBrush: {
                 fillColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.fillColor),
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.fillColor),
                 strokeColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.strokeColor),
-                strokeWidth: NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.strokeWidth,
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.strokeColor),
+                strokeWidth: NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultCapturedFieldBrush.strokeWidth,
             },
             DefaultLabelBrush: {
                 fillColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.fillColor),
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.fillColor),
                 strokeColor: Color
-                    .fromJSON(NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.strokeColor),
-                strokeWidth: NativeModule$3.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.strokeWidth,
+                    .fromJSON(NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.strokeColor),
+                strokeWidth: NativeModule$2.Defaults.LabelCapture.LabelCaptureBasicOverlay.DefaultLabelBrush.strokeWidth,
             },
         },
     },
 };
 
-// tslint:disable:variable-name
-const NativeModule$2 = NativeModules.ScanditDataCaptureLabel;
-// tslint:enable:variable-name
-class NativeLabelCaptureProxy {
-    setModeEnabledState(enabled) {
-        return NativeModule$2.setModeEnabledState(enabled);
-    }
-    updateLabelCaptureSettings(settingsJson) {
-        return NativeModule$2.applyLabelCaptureModeSettings(settingsJson);
-    }
-}
-
 class LabelCapture extends DefaultSerializeable {
-    get isEnabled() {
-        return this._isEnabled;
-    }
-    set isEnabled(isEnabled) {
-        this._isEnabled = isEnabled;
-        this.modeProxy.setModeEnabledState(isEnabled);
-    }
     get context() {
         return this._context;
     }
@@ -247,6 +239,13 @@ class LabelCapture extends DefaultSerializeable {
     }
     type = 'labelCapture';
     _isEnabled = true;
+    get isEnabled() {
+        return this._isEnabled;
+    }
+    set isEnabled(isEnabled) {
+        this._isEnabled = isEnabled;
+        this.modeProxy.setModeEnabledState(isEnabled);
+    }
     settings;
     privateContext = null;
     get _context() {
@@ -276,7 +275,7 @@ class LabelCapture extends DefaultSerializeable {
     constructor() {
         super();
         this.listenerProxy = LabelCaptureListenerProxy.forLabelCapture(this);
-        this.modeProxy = new NativeLabelCaptureProxy();
+        this.modeProxy = new LabelCaptureProxy();
     }
     applySettings(settings) {
         this.settings = settings;
@@ -296,7 +295,7 @@ class LabelCapture extends DefaultSerializeable {
     }
 }
 __decorate([
-    nameForSerialization('enabled')
+    ignoreFromSerialization
 ], LabelCapture.prototype, "_isEnabled", void 0);
 __decorate([
     ignoreFromSerialization
@@ -320,9 +319,9 @@ const EventEmitter$1 = new NativeEventEmitter(NativeModule$1);
 // tslint:enable:variable-name
 var LabelCaptureBasicOverlayListenerEventName;
 (function (LabelCaptureBasicOverlayListenerEventName) {
-    LabelCaptureBasicOverlayListenerEventName["brushForFieldOfLabel"] = "LabelCaptureBasicOverlayListener.brushForFieldOfLabel";
-    LabelCaptureBasicOverlayListenerEventName["brushForLabel"] = "LabelCaptureBasicOverlayListener.brushForLabel";
-    LabelCaptureBasicOverlayListenerEventName["didTapLabel"] = "LabelCaptureBasicOverlayListener.didTapLabel";
+    LabelCaptureBasicOverlayListenerEventName["brushForFieldOfLabel"] = "labelCaptureBasicOverlayListener-brushForFieldOfLabel";
+    LabelCaptureBasicOverlayListenerEventName["brushForLabel"] = "labelCaptureBasicOverlayListener-brushForLabel";
+    LabelCaptureBasicOverlayListenerEventName["didTapLabel"] = "labelCaptureBasicOverlayListener-didTapLabel";
 })(LabelCaptureBasicOverlayListenerEventName || (LabelCaptureBasicOverlayListenerEventName = {}));
 class LabelCaptureBasicOverlayProxy {
     overlay;
@@ -341,28 +340,25 @@ class LabelCaptureBasicOverlayProxy {
     subscribeListener() {
         NativeModule$1.registerListenerForBasicOverlayEvents();
         const brushForFieldListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForFieldOfLabel, (body) => {
-            const payload = JSON.parse(body);
             let brush = this.overlay.capturedFieldBrush;
-            const field = LabelField.fromJSON(JSON.parse(payload.field));
-            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.brushForFieldOfLabel) {
+                const field = LabelField.fromJSON(JSON.parse(body.field));
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 brush = this.overlay.listener.brushForFieldOfLabel(this.overlay, field, label);
             }
-            NativeModule$1.setBrushForFieldOfLabel(brush ? JSON.stringify(brush.toJSON()) : null, field.name, label.trackingID);
+            NativeModule$1.finishBrushForFieldOfLabelCallback(brush ? JSON.stringify(brush.toJSON()) : null);
         });
         const brushForLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForLabel, (body) => {
-            const payload = JSON.parse(body);
             let brush = this.overlay.labelBrush;
-            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.brushForLabel) {
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 brush = this.overlay.listener.brushForLabel(this.overlay, label);
             }
-            NativeModule$1.setBrushForLabel(brush ? JSON.stringify(brush.toJSON()) : null, label.trackingID);
+            NativeModule$1.finishBrushForLabelCallback(brush ? JSON.stringify(brush.toJSON()) : null);
         });
         const didTapLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.didTapLabel, (body) => {
-            const payload = JSON.parse(body);
             if (this.overlay.listener && this.overlay.listener.didTapLabel) {
-                const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 this.overlay.listener.didTapLabel(this.overlay, label);
             }
         });
@@ -504,9 +500,9 @@ const EventEmitter = new NativeEventEmitter(NativeModule);
 // tslint:enable:variable-name
 var LabelCaptureAdvancedOverlayListenerEventName;
 (function (LabelCaptureAdvancedOverlayListenerEventName) {
-    LabelCaptureAdvancedOverlayListenerEventName["viewForLabel"] = "LabelCaptureAdvancedOverlayListener.viewForLabel";
-    LabelCaptureAdvancedOverlayListenerEventName["anchorForLabel"] = "LabelCaptureAdvancedOverlayListener.anchorForLabel";
-    LabelCaptureAdvancedOverlayListenerEventName["offsetForLabel"] = "LabelCaptureAdvancedOverlayListener.offsetForLabel";
+    LabelCaptureAdvancedOverlayListenerEventName["viewForLabel"] = "labelCaptureAdvancedOverlayListener-viewForLabel";
+    LabelCaptureAdvancedOverlayListenerEventName["anchorForLabel"] = "labelCaptureAdvancedOverlayListener-anchorForLabel";
+    LabelCaptureAdvancedOverlayListenerEventName["offsetForLabel"] = "labelCaptureAdvancedOverlayListener-offsetForLabel";
 })(LabelCaptureAdvancedOverlayListenerEventName || (LabelCaptureAdvancedOverlayListenerEventName = {}));
 class LabelCaptureAdvancedOverlayProxy {
     overlay;
@@ -531,31 +527,28 @@ class LabelCaptureAdvancedOverlayProxy {
     subscribeListener() {
         NativeModule.registerListenerForAdvancedOverlayEvents();
         const viewForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.viewForLabel, (body) => {
-            const payload = JSON.parse(body);
             let view = null;
-            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.viewForCapturedLabel) {
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 view = this.overlay.listener.viewForCapturedLabel(this.overlay, label);
             }
-            NativeModule.setViewForCapturedLabel(this.getJSONStringForView(view), label.trackingID);
+            NativeModule.finishViewForLabelCallback(this.getJSONStringForView(view));
         });
         const anchorForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.anchorForLabel, (body) => {
-            const payload = JSON.parse(body);
             let anchor = Anchor.Center;
-            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.anchorForCapturedLabel) {
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 anchor = this.overlay.listener.anchorForCapturedLabel(this.overlay, label);
             }
-            NativeModule.setAnchorForCapturedLabel(anchor, label.trackingID);
+            NativeModule.finishAnchorForLabelCallback(anchor);
         });
         const offsetForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.offsetForLabel, (body) => {
-            const payload = JSON.parse(body);
             let offset = PointWithUnit.zero;
-            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.offsetForCapturedLabel) {
+                const label = CapturedLabel.fromJSON(JSON.parse(body.label));
                 offset = this.overlay.listener.offsetForCapturedLabel(this.overlay, label);
             }
-            NativeModule.setOffsetForCapturedLabel(JSON.stringify(offset.toJSON()), label.trackingID);
+            NativeModule.finishOffsetForLabelCallback(JSON.stringify(offset.toJSON()));
         });
         this.nativeListeners.push(viewForLabelListener);
         this.nativeListeners.push(anchorForLabelListener);

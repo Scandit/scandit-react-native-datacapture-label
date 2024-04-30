@@ -9,8 +9,11 @@
 @interface RCT_EXTERN_MODULE (ScanditDataCaptureLabel, RCTEventEmitter)
 
 RCT_EXTERN_METHOD(finishDidUpdateSessionCallback : (BOOL)enabled)
-
-RCT_EXTERN_METHOD(setModeEnabledState : (BOOL)enabled)
+RCT_EXTERN_METHOD(finishBrushForFieldOfLabelCallback : (NSString *)brush)
+RCT_EXTERN_METHOD(finishBrushForLabelCallback : (NSString *)brush)
+RCT_EXTERN_METHOD(finishViewForLabelCallback : (NSString *)viewJSON)
+RCT_EXTERN_METHOD(finishAnchorForLabelCallback : (NSString *)anchorJSON)
+RCT_EXTERN_METHOD(finishOffsetForLabelCallback : (NSString *)offsetJSON)
 
 RCT_EXTERN_METHOD(setBrushForFieldOfLabel
                   : (NSString *)brushJSON fieldName
@@ -25,35 +28,14 @@ RCT_EXTERN_METHOD(setBrushForLabel
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(setViewForFieldOfLabel
-                  : (NSString *)viewJSON fieldName
-                  : (NSString *)fieldName labelId
-                  : (NSInteger)labelId resolver
-                  : (RCTPromiseResolveBlock)resolve rejecter
-                  : (RCTPromiseRejectBlock)reject)
-
 RCT_EXTERN_METHOD(setViewForCapturedLabel
                   : (NSString *)viewJSON labelId
                   : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(setAnchorForFieldOfLabel
-                  : (NSString *)anchorJSON fieldName
-                  : (NSString *)fieldName labelId
-                  : (NSInteger)labelId resolver
-                  : (RCTPromiseResolveBlock)resolve rejecter
-                  : (RCTPromiseRejectBlock)reject)
-
 RCT_EXTERN_METHOD(setAnchorForCapturedLabel
                   : (NSString *)anchorJSON labelId
-                  : (NSInteger)labelId resolver
-                  : (RCTPromiseResolveBlock)resolve rejecter
-                  : (RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(setOffsetForFieldOfLabel
-                  : (NSString *)offsetJSON fieldName
-                  : (NSString *)fieldName labelId
                   : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
@@ -79,6 +61,8 @@ RCT_EXTERN_METHOD(unregisterListenerForBasicOverlayEvents)
 RCT_EXTERN_METHOD(registerListenerForAdvancedOverlayEvents)
 
 RCT_EXTERN_METHOD(unregisterListenerForAdvancedOverlayEvents)
+
+RCT_EXTERN_METHOD(setModeEnabledState : (BOOL)enabled)
 
 RCT_EXTERN_METHOD(updateLabelCaptureBasicOverlay
                   : (NSString *)overlayJson resolve

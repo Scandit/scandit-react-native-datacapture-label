@@ -6,31 +6,118 @@
 
 import Foundation
 import React
-import ScanditDataCaptureBarcode
-import ScanditDataCaptureCore
 import ScanditFrameworksCore
-import ScanditFrameworksLabel
+import ScanditBarcodeCapture
+import ScanditDataCaptureCore
 import ScanditLabelCapture
+
+enum ScanditDataCaptureLabelError: Int, CustomNSError {
+    case invalidSequenceId = 1
+    case labelNotFound
+    case fieldNotFound
+    case brushInvalid
+    case basicOverlayNil
+    case advancedOverlayNil
+    case viewInvalid
+    case deserializationError
+
+    var domain: String { return "ScanditDataCaptureLabelErrorDomain" }
+
+    var code: Int {
+        return rawValue
+    }
+
+    var message: String {
+        switch self {
+        case .invalidSequenceId:
+            return "The sequence id does not match the current sequence id."
+        case .labelNotFound:
+            return "Label not found."
+        case .fieldNotFound:
+            return "Field not found."
+        case .brushInvalid:
+            return "It was not possible to deserialize a valid Brush"
+        case .viewInvalid:
+            return "It was not possible to deserialize a valid View"
+        case .basicOverlayNil:
+            return "LabelCaptureBasicOverlay is <nil>"
+        case .advancedOverlayNil:
+            return "LabelCaptureAdvancedOverlay is <nil>"
+        case .deserializationError:
+            return "LabelCaptureAdvancedOverlay is <nil>"
+        }
+    }
+
+    var errorUserInfo: [String: Any] {
+        return [NSLocalizedDescriptionKey: message]
+    }
+}
 
 @objc(ScanditDataCaptureLabel)
 class ScanditDataCaptureLabel: RCTEventEmitter {
+    internal let deserializer = LabelCaptureDeserializer()
+    internal var hasListeners = false
 
-    var labelModule: LabelModule!
+    internal var capturedLabelViewCache = [RCTRootView: CapturedLabel]()
 
-    var trackedLabelViewCache: [RCTRootView: (CapturedLabel, LabelField?)] = [:]
+    internal var offset: [Int: PointWithUnit] = [:]
+
+    // LabelCaptureListener
+    internal let didUpdateSessionLock = CallbackLock<Bool>(name: ScanditDataCaptureLabelEvent.didUpdateSession.rawValue)
+    internal var lastFrameSequenceId: Int?
+    internal var lastCapturedLabels: [CapturedLabel]?
+
+    // LabelCaptureBasicOverlayListener
+    internal let brushForFieldLock =
+        CallbackLock<Brush>(name: ScanditDataCaptureLabelEvent.brushForFieldOfLabel.rawValue)
+    internal let brushForLabelLock =
+        CallbackLock<Brush>(name: ScanditDataCaptureLabelEvent.brushForLabel.rawValue)
+
+    // LabelCaptureAdvancedOverlayListener
+    internal let viewForLabelLock =
+        CallbackLock<JSView>(name: ScanditDataCaptureLabelEvent.viewForLabel.rawValue)
+    internal let anchorForLabelLock =
+        CallbackLock<Anchor>(name: ScanditDataCaptureLabelEvent.anchorForLabel.rawValue)
+    internal let offsetForLabelLock =
+        CallbackLock<PointWithUnit>(name: ScanditDataCaptureLabelEvent.offsetForLabel.rawValue)
+
+    
+    internal var modeEnabled = AtomicBool()
+
+    internal var context: DataCaptureContext?
+    internal var dataCaptureView: DataCaptureView?
+
+    internal var labelCapture: LabelCapture? {
+       willSet {
+           labelCapture?.removeListener(self)
+       }
+       didSet {
+           labelCapture?.addListener(self)
+       }
+    }
+    
+    internal var basicOverlay: LabelCaptureBasicOverlay? {
+       willSet {
+           basicOverlay?.delegate = nil
+       }
+       didSet {
+           basicOverlay?.delegate = self
+       }
+    }
+    
+    internal var advancedOverlay: LabelCaptureAdvancedOverlay? {
+       willSet {
+           advancedOverlay?.delegate = nil
+       }
+       didSet {
+           advancedOverlay?.delegate = self
+       }
+    }
 
     override init() {
         super.init()
-        let emitter = ReactNativeEmitter(emitter: self)
-        let listener = FrameworksLabelCaptureListener(emitter: emitter)
-        let basicOverlayListener = FrameworksLabelCaptureBasicOverlayListener(emitter: emitter)
-        let advancedOverlayListener = FrameworksLabelCaptureAdvancedOverlayListener(emitter: emitter)
-        labelModule = LabelModule(emitter: emitter,
-                                  listener: listener,
-                                  basicOverlayListener: basicOverlayListener,
-                                  advancedOverlayListener: advancedOverlayListener
-                                  )
-        labelModule.didStart()
+        registerDeserializer()
+        DeserializationLifeCycleDispatcher.shared.attach(observer: self)
     }
 
     override class func requiresMainQueueSetup() -> Bool {
@@ -43,256 +130,197 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
 
     @objc override func invalidate() {
         super.invalidate()
-        trackedLabelViewCache.removeAll()
-        labelModule.didStop()
+        unregisterDeserializer()
+        DeserializationLifeCycleDispatcher.shared.detach(observer: self)
+        capturedLabelViewCache.removeAll()
+        lastCapturedLabels?.removeAll()
+        lastFrameSequenceId = nil
+        basicOverlay = nil
+        advancedOverlay = nil
+        unlockLocks()
     }
 
     deinit {
         invalidate()
     }
 
-    override func constantsToExport() -> [AnyHashable : Any]! {
-        [
-            "Defaults": [
-                "LabelCapture": labelModule.defaults
-            ]
-        ]
+    internal func unlockLocks() {
+        didUpdateSessionLock.reset()
+        brushForFieldLock.reset()
+        brushForLabelLock.reset()
     }
 
-    override func supportedEvents() -> [String]! {
-        FrameworksLabelCaptureEvent.allCases.map { $0.rawValue }
-    }
-
-    // MARK: - Module API
-
-    @objc(finishDidUpdateSessionCallback:)
-    func finishDidUpdateSessionCallback(enabled: Bool) {
-        labelModule.finishDidUpdateCallback(enabled: enabled)
-    }
-
-    @objc(setModeEnabledState:)
-    func setModeEnabledState(enabled: Bool) {
-        labelModule.setModeEnabled(enabled: enabled)
-    }
-
-    @objc(setBrushForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
-    func setBrushForFieldOfLabel(brushJson: String?,
-                                 fieldName: String,
-                                 labelId: Int,
-                                 resolve: @escaping RCTPromiseResolveBlock,
-                                 reject: @escaping RCTPromiseRejectBlock) {
-        let brushForFieldOfLabel = BrushForLabelField(brushJson: brushJson,
-                                                      labelTrackingId: labelId,
-                                                      fieldName: fieldName)
-                                     labelModule.setBrushForFieldOfLabel(brushForFieldOfLabel: brushForFieldOfLabel,
-                                                                         result: .create(resolve, reject))
-    }
-
-    @objc(setBrushForLabel:labelId:resolver:rejecter:)
-    func setBrushForLabel(brushJson: String?,
-                          labelId: Int,
-                          resolve: @escaping RCTPromiseResolveBlock,
-                          reject: @escaping RCTPromiseRejectBlock) {
-        let brushForLabel = BrushForLabelField(brushJson: brushJson,
-                                               labelTrackingId: labelId)
-                              labelModule.setBrushForLabel(brushForLabel: brushForLabel, result: .create(resolve, reject))
-    }
-
-    @objc(setViewForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
-    func setViewForFieldOfLabel(viewJson: String?,
-                                fieldName: String,
-                                labelId: Int,
-                                resolve: @escaping RCTPromiseResolveBlock,
-                                reject: @escaping RCTPromiseRejectBlock) {
-        let result = ReactNativeResult.create(resolve, reject)
-                                    do {
-                                        if let viewJson = viewJson {
-                                            let config = try JSONSerialization.jsonObject(with: viewJson.data(using: .utf8)!,
-                                                                                          options: []) as! [String: Any]
-                                            let jsView = try JSView(with: config)
-                                            try dispatchMainSync {
-                                                let rootView = rootViewWith(jsView: jsView)
-                                                let (label, field) = try labelModule.labelAndField(for: labelId,
-                                                                                                   fieldName: fieldName)
-                                                trackedLabelViewCache[rootView] = (label, field)
-                                                let viewForLabelField = ViewForLabel(view: rootView,
-                                                                                     trackingId: label.trackingId,
-                                                                                     fieldName: field.name)
-                                                labelModule.setViewForFieldOfLabel(viewForFieldOfLabel: viewForLabelField, result: result)
-                                                return
-                                            }
-                                        }
-                                    } catch {
-                                        result.reject(error: error)
-                                        return
-                                    }
-                                    let viewForLabelField = ViewForLabel(view: nil,
-                                                                         trackingId: labelId,
-                                                                         fieldName: fieldName)
-                                    labelModule.setViewForFieldOfLabel(viewForFieldOfLabel: viewForLabelField, result: result)
-    }
-
-    @objc(setViewForCapturedLabel:labelId:resolver:rejecter:)
-    func setViewForCapturedLabel(viewJson: String?,                                
-                                 labelId: Int,
-                                 resolve: @escaping RCTPromiseResolveBlock,
-                                 reject: @escaping RCTPromiseRejectBlock) {
-        let result = ReactNativeResult.create(resolve, reject)
-                                     do {
-                                         if let viewJson = viewJson {
-                                             let config = try JSONSerialization.jsonObject(with: viewJson.data(using: .utf8)!,
-                                                                                           options: []) as! [String: Any]
-                                             let jsView = try JSView(with: config)
-                                             try dispatchMainSync {
-                                                 let rootView = rootViewWith(jsView: jsView)
-                                                 let label = try labelModule.label(for: labelId)
-                                                 trackedLabelViewCache[rootView] = (label, nil)
-                                                 let viewForLabel = ViewForLabel(view: rootView,
-                                                                                 trackingId: label.trackingId)
-                                                 labelModule.setViewForCapturedLabel(viewForLabel: viewForLabel, result: result)
-                                                 return
-                                             }
-                                         }
-                                     } catch {
-                                         result.reject(error: error)
-                                         return
-                                     }
-                                     let viewForLabel = ViewForLabel(view: nil,
-                                                                     trackingId: labelId)
-                                     labelModule.setViewForCapturedLabel(viewForLabel: viewForLabel, result: result)
-    }
-
-    @objc(setAnchorForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
-    func setAnchorForFieldOfLabel(anchorJson: String,
-                                  fieldName: String,
-                                  labelId: Int,
-                                  resolve: @escaping RCTPromiseResolveBlock,
-                                  reject: @escaping RCTPromiseRejectBlock) {
-        let anchorForFieldOfLabel = AnchorForLabel(anchorString: anchorJson,
-                                                   trackingId: labelId,
-                                                   fieldName: fieldName)
-                                      labelModule.setAnchorForFieldOfLabel(anchorForFieldOfLabel: anchorForFieldOfLabel, result: .create(resolve, reject))
-    }
-
-    @objc(setAnchorForCapturedLabel:labelId:resolver:rejecter:)
-    func setAnchorForCapturedLabel(anchorJson: String,
-                                   labelId: Int,
-                                   resolve: @escaping RCTPromiseResolveBlock,
-                                   reject: @escaping RCTPromiseRejectBlock) {
-        let anchorForFieldOfLabel = AnchorForLabel(anchorString: anchorJson,
-                                                   trackingId: labelId)
-                                       labelModule.setAnchorForCapturedLabel(anchorForLabel: anchorForFieldOfLabel, result: .create(resolve, reject))
-    }
-
-    @objc(setOffsetForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
-    func setOffsetForFieldOfLabel(offsetJson: String,
-                                  fieldName: String,
-                                  labelId: Int,
-                                  resolve: @escaping RCTPromiseResolveBlock,
-                                  reject: @escaping RCTPromiseRejectBlock) {
-        let offsetForFieldOfLabel = OffsetForLabel(offsetJson: offsetJson,
-                                                   trackingId: labelId,
-                                                   fieldName: fieldName)
-                                      labelModule.setOffsetForFieldOfLabel(offsetForFieldOfLabel: offsetForFieldOfLabel,
-                                                                           result: .create(resolve, reject))
-    }
-
-    @objc(setOffsetForCapturedLabel:labelId:resolver:rejecter:)
-    func setOffsetForCapturedLabel(offsetJson: String,                                   
-                                   labelId: Int,
-                                   resolve: @escaping RCTPromiseResolveBlock,
-                                   reject: @escaping RCTPromiseRejectBlock) {
-        let offsetForCapturedLabel = OffsetForLabel(offsetJson: offsetJson,
-                                                    trackingId: labelId)
-                                       labelModule.setOffsetForCapturedLabel(offsetForLabel: offsetForCapturedLabel,
-                                                                             result: .create(resolve, reject))
-    }
-
-    @objc(clearTrackedCapturedLabelViews:rejecter:)
-    func clearTrackedCapturedLabelViews(resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        labelModule.clearTrackedCapturedLabelViews()
-        dispatchMainSync {
-            trackedLabelViewCache.removeAll()
-        }
-        resolve(nil)
-    }
-
+    // Empty methods to unify the logic on the TS side for supporting functionality automatically provided by RN on iOS,
+    // but custom implemented on Android.
     @objc func registerListenerForEvents() {
-        labelModule.addListener()
+        // Empty on purpose
     }
 
     @objc func unregisterListenerForEvents() {
-        labelModule.removeListener()
+        // Empty on purpose
     }
 
     @objc func registerListenerForBasicOverlayEvents() {
-        labelModule.addBasicOverlayListener()
+        // Empty on purpose
     }
 
     @objc func unregisterListenerForBasicOverlayEvents() {
-        labelModule.removeBasicOverlayListener()
+        // Empty on purpose
     }
 
     @objc func registerListenerForAdvancedOverlayEvents() {
-        labelModule.addAdvancedOverlayListener()
+        // Empty on purpose
     }
 
     @objc func unregisterListenerForAdvancedOverlayEvents() {
-        labelModule.removeAdvancedOverlayListener()
+        // Empty on purpose
     }
-
-    @objc(updateLabelCaptureBasicOverlay:resolve:reject:)
-    func updateLabelCaptureBasicOverlay(overlayJson: String,
-                                        resolve: @escaping RCTPromiseResolveBlock,
-                                        reject: @escaping RCTPromiseRejectBlock) {
-        labelModule.updateBasicOverlay(overlayJson: overlayJson, result: .create(resolve, reject))
-    }
-
-    @objc(updateLabelCaptureAdvancedOverlay:resolve:reject:)
-    func updateLabelCaptureAdvancedOverlay(overlayJson: String,
-                                           resolve: @escaping RCTPromiseResolveBlock,
-                                           reject: @escaping RCTPromiseRejectBlock) {
-        labelModule.updateAdvancedOverlay(overlayJson: overlayJson, result: .create(resolve, reject))
-    }
-
+    
     @objc(applyLabelCaptureModeSettings:resolve:reject:)
     func applyLabelCaptureModeSettings(settingsJson: String,
-                                       resolve: @escaping RCTPromiseResolveBlock,
-                                       reject: @escaping RCTPromiseRejectBlock) {
-        labelModule.applyModeSettings(modeSettingsJson: settingsJson, result: .create(resolve, reject))
-    }
-
-    private func rootViewWith(jsView: JSView) -> ScanditRootView {
-        // To support self sizing js views we need to leverage the RCTRootViewDelegate
-        // see https://reactnative.dev/docs/communication-ios
-        let view = ScanditRootView(bridge: bridge,
-                                   moduleName: jsView.moduleName,
-                                   initialProperties: jsView.initialProperties)
-        view.sizeFlexibility = .widthAndHeight
-        view.delegate = self
-        view.backgroundColor = .clear
-        view.isUserInteractionEnabled = true
-        view.addGestureRecognizer(TapGestureRecognizerWithClosure { [weak view] in
-            guard let view = view else { return }
-            view.didTap?()
-        })
-        return view
-    }
-}
-
-extension ScanditDataCaptureLabel: RCTRootViewDelegate {
-    func rootViewDidChangeIntrinsicSize(_ rootView: RCTRootView!) {
-        guard let view = rootView as? ScanditRootView else { return }
-        rootView.bounds.size = rootView.intrinsicContentSize
-        guard let (label, field) = trackedLabelViewCache[view] else {
-            // Barcode was lost before the view updated its size.
+                                     resolve: @escaping RCTPromiseResolveBlock,
+                                     reject: @escaping RCTPromiseRejectBlock) {
+        guard let mode = labelCapture else {
+            resolve(nil)
             return
         }
-        let viewForLabel = ViewForLabel(view: view, trackingId: label.trackingId, fieldName: field?.name)
-        if let field = field {
-            labelModule.setViewForFieldOfLabel(viewForFieldOfLabel: viewForLabel)
-        } else {
-            labelModule.setViewForCapturedLabel(viewForLabel: viewForLabel)
+        
+        do {
+            let settings = try deserializer.settings(fromJSONString: settingsJson)
+            mode.apply(settings)
+            resolve(nil)
+        } catch {
+            reject("Something wrong happened while apply the new label capture settings.", error.localizedDescription, error)
         }
     }
+    
+    @objc(setModeEnabledState:)
+    func setModeEnabledState(enabled: Bool) {
+        modeEnabled.value = enabled
+        labelCapture?.isEnabled = enabled
+    }
+    
+    func onModeRemovedFromContext() {
+        labelCapture = nil
+        
+        if let basicOverlay = basicOverlay, let dataCaptureView = dataCaptureView {
+            dataCaptureView.removeOverlay(basicOverlay)
+        }
+        basicOverlay = nil
+        
+        if let advancedOverlay = self.advancedOverlay, let dataCaptureView = self.dataCaptureView {
+            dataCaptureView.removeOverlay(advancedOverlay)
+        }
+        self.advancedOverlay = nil
+    }
 }
+
+extension ScanditDataCaptureLabel: DeserializationLifeCycleObserver {
+    public func dataCaptureContext(deserialized context: DataCaptureContext?) {
+        self.context = context
+    }
+    
+    public func dataCaptureView(deserialized view: DataCaptureView?) {
+        dataCaptureView = view
+    }
+    
+    public func dataCaptureContext(addMode modeJson: String) throws {
+        if JSONValue(string: modeJson).string(forKey: "type") != "labelCapture" {
+            return
+        }
+        
+        guard let dcContext = context else {
+            return
+        }
+        do {
+            let mode = try deserializer.mode(fromJSONString: modeJson, with: dcContext)
+            dcContext.addMode(mode)
+        }catch {
+            print(error)
+        }
+    }
+    
+    public func dataCaptureContext(removeMode modeJson: String) {
+        if JSONValue(string: modeJson).string(forKey: "type") != "labelCapture" {
+            return
+        }
+        
+        guard let dcContext = context else {
+            return
+        }
+        
+        guard let mode = labelCapture else {
+            return
+        }
+        dcContext.removeMode(mode)
+        onModeRemovedFromContext()
+    }
+    
+    public func dataCaptureContextAllModeRemoved() {
+        onModeRemovedFromContext()
+    }
+    
+    public func didDisposeDataCaptureContext() {
+        context = nil
+        onModeRemovedFromContext()
+    }
+    
+    public func dataCaptureView(addOverlay overlayJson: String) throws {
+        let overlayType = JSONValue(string: overlayJson).string(forKey: "type")
+        if overlayType != "labelCaptureBasic" && overlayType != "labelCaptureAdvanced" {
+            return
+        }
+        
+        guard let mode = labelCapture else {
+            return
+        }
+        
+        try dispatchMainSync {
+            let overlay: DataCaptureOverlay = (overlayType == "labelCaptureBasic") ?
+            try deserializer.basicOverlay(fromJSONString: overlayJson, withMode: mode) :
+            try deserializer.advancedOverlay(fromJSONString: overlayJson, withMode: mode)
+            
+            dataCaptureView?.addOverlay(overlay)
+        }
+    }
+    
+    public func dataCaptureView(removeOverlay overlayJson: String) {
+        let overlayType = JSONValue(string: overlayJson).string(forKey: "type")
+        if overlayType != "labelCaptureBasic" && overlayType != "labelCaptureAdvanced" {
+            return
+        }
+        
+       if overlayType == "labelCaptureBasic" {
+            removeCurrentBasicaOverlay()
+        } else {
+             removeCurrentAdvancedOverlay()
+        }
+    }
+    
+    public func dataCaptureViewRemoveAllOverlays() {
+        removeCurrentBasicaOverlay()
+        removeCurrentAdvancedOverlay()
+    }
+    
+    internal func removeCurrentBasicaOverlay() {
+        guard let overlay = basicOverlay else {
+            return
+        }
+        
+        dispatchMainSync {
+            dataCaptureView?.removeOverlay(overlay)
+        }
+        basicOverlay = nil
+    }
+    
+    internal func removeCurrentAdvancedOverlay() {
+        guard let overlay = advancedOverlay else {
+            return
+        }
+        dispatchMainSync {
+            dataCaptureView?.removeOverlay(overlay)
+        }
+        advancedOverlay = nil
+    }
+}
+
