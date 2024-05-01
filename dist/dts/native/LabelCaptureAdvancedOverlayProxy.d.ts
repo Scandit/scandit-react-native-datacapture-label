@@ -17,3 +17,6 @@ export declare class LabelCaptureAdvancedOverlayProxy {
     private getJSONStringForView;
     private isSerializeable;
 }
+export interface LabelCaptureAdvancedOverlayEventPayload {
+    label: string;
+}
