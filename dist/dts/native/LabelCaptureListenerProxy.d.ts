@@ -7,6 +7,3 @@ export declare class LabelCaptureListenerProxy {
     unsubscribeListener(): void;
     private notifyListenersOfDidUpdateSession;
 }
-export interface LabelCaptureSessionEventPayload {
-    session: string;
-}

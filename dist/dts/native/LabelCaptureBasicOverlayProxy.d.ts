@@ -11,7 +11,3 @@ export declare class LabelCaptureBasicOverlayProxy {
     unsubscribeListener(): void;
     updateBasicOverlay(basicOverlayJson: string): Promise<void>;
 }
-export interface LabelCaptureBasicOverlayEventPayload {
-    field: string;
-    label: string;
-}

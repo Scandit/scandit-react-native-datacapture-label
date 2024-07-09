@@ -1,4 +1,4 @@
-export declare class NativeLabelCaptureProxy {
+export declare class LabelCaptureProxy {
     setModeEnabledState(enabled: boolean): Promise<void>;
     updateLabelCaptureSettings(settingsJson: string): Promise<void>;
 }
