@@ -3493,7 +3493,12 @@ class LabelCaptureSettings extends DefaultSerializeable {
     properties = {};
     static fromJSON(json) {
         // tslint:disable-next-line:no-console
-        throw new Error('This property is deprecated in favour of LabelCaptureSettings.settingsFromLabelDefinitions. Please update your code to use the new property.');
+        console.warn('Deprecated in favour of LabelCaptureSettings.settingsFromLabelDefinitions.');
+        const settings = new LabelCaptureSettings();
+        Object.keys(json).forEach(key => {
+            settings[key] = json[key];
+        });
+        return settings;
     }
     static settingsFromLabelDefinitions(definitions, properties) {
         const settings = new LabelCaptureSettings();
