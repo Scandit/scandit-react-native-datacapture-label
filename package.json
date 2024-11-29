@@ -1,6 +1,6 @@
 {
   "name": "scandit-react-native-datacapture-label",
-  "version": "6.28.1",
+  "version": "7.0.0",
   "description": "Scandit Data Capture SDK for React Native",
   "homepage": "https://github.com/Scandit/scandit-react-native-datacapture-label",
   "main": "dist/index.js",
@@ -36,9 +36,9 @@
     "rollup-plugin-modify": "3.0.0"
   },
   "dependencies": {
-    "scandit-react-native-datacapture-core": "6.28.1",
-    "scandit-react-native-datacapture-barcode": "6.28.1",
-    "scandit-datacapture-frameworks-barcode": "6.28.1",
-    "scandit-datacapture-frameworks-core": "6.28.1"
+    "scandit-react-native-datacapture-core": "7.0.0",
+    "scandit-react-native-datacapture-barcode": "7.0.0",
+    "scandit-datacapture-frameworks-barcode": "7.0.0",
+    "scandit-datacapture-frameworks-core": "7.0.0"
   }
 }
