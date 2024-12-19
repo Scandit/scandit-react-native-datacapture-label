@@ -13,7 +13,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
-import com.scandit.datacapture.reactnative.barcode.tracking.nativeViewFromJson
+import com.scandit.datacapture.reactnative.barcode.batch.nativeViewFromJson
 import com.scandit.datacapture.reactnative.core.utils.ReactNativeResult
 
 class ScanditDataCaptureLabelModule(
