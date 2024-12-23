@@ -98,6 +98,40 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
                               labelModule.setBrushForLabel(brushForLabel: brushForLabel, result: .create(resolve, reject))
     }
 
+    @objc(setViewForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
+    func setViewForFieldOfLabel(viewJson: String?,
+                                fieldName: String,
+                                labelId: Int,
+                                resolve: @escaping RCTPromiseResolveBlock,
+                                reject: @escaping RCTPromiseRejectBlock) {
+        let result = ReactNativeResult.create(resolve, reject)
+                                    do {
+                                        if let viewJson = viewJson {
+                                            let config = try JSONSerialization.jsonObject(with: viewJson.data(using: .utf8)!,
+                                                                                          options: []) as! [String: Any]
+                                            let jsView = try JSView(with: config)
+                                            try dispatchMainSync {
+                                                let rootView = rootViewWith(jsView: jsView)
+                                                let (label, field) = try labelModule.labelAndField(for: labelId,
+                                                                                                   fieldName: fieldName)
+                                                trackedLabelViewCache[rootView] = (label, field)
+                                                let viewForLabelField = ViewForLabel(view: rootView,
+                                                                                     trackingId: label.trackingId,
+                                                                                     fieldName: field.name)
+                                                labelModule.setViewForFieldOfLabel(viewForFieldOfLabel: viewForLabelField, result: result)
+                                                return
+                                            }
+                                        }
+                                    } catch {
+                                        result.reject(error: error)
+                                        return
+                                    }
+                                    let viewForLabelField = ViewForLabel(view: nil,
+                                                                         trackingId: labelId,
+                                                                         fieldName: fieldName)
+                                    labelModule.setViewForFieldOfLabel(viewForFieldOfLabel: viewForLabelField, result: result)
+    }
+
     @objc(setViewForCapturedLabel:labelId:resolver:rejecter:)
     func setViewForCapturedLabel(viewJson: String?,                                
                                  labelId: Int,
@@ -128,6 +162,18 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
                                      labelModule.setViewForCapturedLabel(viewForLabel: viewForLabel, result: result)
     }
 
+    @objc(setAnchorForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
+    func setAnchorForFieldOfLabel(anchorJson: String,
+                                  fieldName: String,
+                                  labelId: Int,
+                                  resolve: @escaping RCTPromiseResolveBlock,
+                                  reject: @escaping RCTPromiseRejectBlock) {
+        let anchorForFieldOfLabel = AnchorForLabel(anchorString: anchorJson,
+                                                   trackingId: labelId,
+                                                   fieldName: fieldName)
+                                      labelModule.setAnchorForFieldOfLabel(anchorForFieldOfLabel: anchorForFieldOfLabel, result: .create(resolve, reject))
+    }
+
     @objc(setAnchorForCapturedLabel:labelId:resolver:rejecter:)
     func setAnchorForCapturedLabel(anchorJson: String,
                                    labelId: Int,
@@ -136,6 +182,19 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
         let anchorForFieldOfLabel = AnchorForLabel(anchorString: anchorJson,
                                                    trackingId: labelId)
                                        labelModule.setAnchorForCapturedLabel(anchorForLabel: anchorForFieldOfLabel, result: .create(resolve, reject))
+    }
+
+    @objc(setOffsetForFieldOfLabel:fieldName:labelId:resolver:rejecter:)
+    func setOffsetForFieldOfLabel(offsetJson: String,
+                                  fieldName: String,
+                                  labelId: Int,
+                                  resolve: @escaping RCTPromiseResolveBlock,
+                                  reject: @escaping RCTPromiseRejectBlock) {
+        let offsetForFieldOfLabel = OffsetForLabel(offsetJson: offsetJson,
+                                                   trackingId: labelId,
+                                                   fieldName: fieldName)
+                                      labelModule.setOffsetForFieldOfLabel(offsetForFieldOfLabel: offsetForFieldOfLabel,
+                                                                           result: .create(resolve, reject))
     }
 
     @objc(setOffsetForCapturedLabel:labelId:resolver:rejecter:)
@@ -218,10 +277,6 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
             view.didTap?()
         })
         return view
-    }
-
-    @objc func clearCapturedLabelViews() {
-        labelModule.clearTrackedCapturedLabelViews()
     }
 }
 
