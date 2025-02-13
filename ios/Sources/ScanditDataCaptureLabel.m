@@ -25,8 +25,22 @@ RCT_EXTERN_METHOD(setBrushForLabel
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(setViewForFieldOfLabel
+                  : (NSString *)viewJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(setViewForCapturedLabel
                   : (NSString *)viewJSON labelId
+                  : (NSInteger)labelId resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(setAnchorForFieldOfLabel
+                  : (NSString *)anchorJSON fieldName
+                  : (NSString *)fieldName labelId
                   : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
@@ -37,13 +51,22 @@ RCT_EXTERN_METHOD(setAnchorForCapturedLabel
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
+RCT_EXTERN_METHOD(setOffsetForFieldOfLabel
+                  : (NSString *)offsetJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject)
+
 RCT_EXTERN_METHOD(setOffsetForCapturedLabel
                   : (NSString *)offsetJSON labelId
                   : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(clearCapturedLabelViews)
+RCT_EXTERN_METHOD(clearCapturedLabelViews
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(registerListenerForEvents)
 
