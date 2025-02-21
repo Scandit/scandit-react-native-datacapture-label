@@ -1,4 +1,4 @@
-import { nameForSerialization, serializationDefault, ignoreFromSerializationIfNull, DefaultSerializeable, ignoreFromSerialization, Point, Size } from 'scandit-react-native-datacapture-core/dist/core';
+import { nameForSerialization, serializationDefault, ignoreFromSerializationIfNull, DefaultSerializeable, ignoreFromSerialization, Point, Size, EventDataParser } from 'scandit-react-native-datacapture-core/dist/core';
 import { NativeModules, NativeEventEmitter } from 'react-native';
 import { Barcode } from 'scandit-react-native-datacapture-barcode';
 import { CameraSettings, Color, NoViewfinder, Quadrilateral, Brush, Rect, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
@@ -161,8 +161,13 @@ class LabelCaptureListenerProxy {
     }
     subscribeListener() {
         NativeModule$4.registerListenerForEvents();
-        const listener = EventEmitter$2.addListener(LabelCaptureListenerEventName.didUpdateSession, (body) => {
-            const payload = JSON.parse(body);
+        const listener = EventEmitter$2.addListener(LabelCaptureListenerEventName.didUpdateSession, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureListenerProxy didUpdateSession payload is null');
+                return;
+            }
             const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
             this.notifyListenersOfDidUpdateSession(session);
             NativeModule$4.finishDidUpdateSessionCallback(this.mode.isEnabled);
@@ -340,8 +345,13 @@ class LabelCaptureBasicOverlayProxy {
     }
     subscribeListener() {
         NativeModule$1.registerListenerForBasicOverlayEvents();
-        const brushForFieldListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForFieldOfLabel, (body) => {
-            const payload = JSON.parse(body);
+        const brushForFieldListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForFieldOfLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureBasicOverlayProxy brushForFieldOfLabel payload is null');
+                return;
+            }
             let brush = this.overlay.capturedFieldBrush;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -350,8 +360,13 @@ class LabelCaptureBasicOverlayProxy {
             }
             NativeModule$1.setBrushForFieldOfLabel(brush ? JSON.stringify(brush.toJSON()) : null, field.name, label.trackingID);
         });
-        const brushForLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForLabel, (body) => {
-            const payload = JSON.parse(body);
+        const brushForLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.brushForLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureBasicOverlayProxy brushForLabel payload is null');
+                return;
+            }
             let brush = this.overlay.labelBrush;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.brushForLabel) {
@@ -359,8 +374,13 @@ class LabelCaptureBasicOverlayProxy {
             }
             NativeModule$1.setBrushForLabel(brush ? JSON.stringify(brush.toJSON()) : null, label.trackingID);
         });
-        const didTapLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.didTapLabel, (body) => {
-            const payload = JSON.parse(body);
+        const didTapLabelListener = EventEmitter$1.addListener(LabelCaptureBasicOverlayListenerEventName.didTapLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureBasicOverlayProxy didTapLabel payload is null');
+                return;
+            }
             if (this.overlay.listener && this.overlay.listener.didTapLabel) {
                 const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
                 this.overlay.listener.didTapLabel(this.overlay, label);
@@ -530,8 +550,13 @@ class LabelCaptureAdvancedOverlayProxy {
     }
     subscribeListener() {
         NativeModule.registerListenerForAdvancedOverlayEvents();
-        const viewForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.viewForLabel, (body) => {
-            const payload = JSON.parse(body);
+        const viewForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.viewForLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureAdvancedOverlayProxy viewForLabel payload is null');
+                return;
+            }
             let view = null;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.viewForCapturedLabel) {
@@ -539,8 +564,13 @@ class LabelCaptureAdvancedOverlayProxy {
             }
             NativeModule.setViewForCapturedLabel(this.getJSONStringForView(view), label.trackingID);
         });
-        const anchorForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.anchorForLabel, (body) => {
-            const payload = JSON.parse(body);
+        const anchorForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.anchorForLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureAdvancedOverlayProxy anchorForLabel payload is null');
+                return;
+            }
             let anchor = Anchor.Center;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.anchorForCapturedLabel) {
@@ -548,8 +578,13 @@ class LabelCaptureAdvancedOverlayProxy {
             }
             NativeModule.setAnchorForCapturedLabel(anchor, label.trackingID);
         });
-        const offsetForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.offsetForLabel, (body) => {
-            const payload = JSON.parse(body);
+        const offsetForLabelListener = EventEmitter.addListener(LabelCaptureAdvancedOverlayListenerEventName.offsetForLabel, (event) => {
+            const payload = EventDataParser.parse(event.data);
+            if (payload === null) {
+                // tslint:disable-next-line:no-console
+                console.error('LabelCaptureAdvancedOverlayProxy offsetForLabel payload is null');
+                return;
+            }
             let offset = PointWithUnit.zero;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
             if (this.overlay.listener && this.overlay.listener.offsetForCapturedLabel) {
