@@ -687,10 +687,6 @@ class LabelCaptureAdvancedOverlay extends DefaultSerializeable {
         this.proxy = LabelCaptureAdvancedOverlayProxy.forOverlay(this);
     }
     setViewForCapturedLabel(capturedLabel, view) {
-        const errorText = 'The method no longer supports rendering any kind of images. Remove them to be able to set the view for your label. For further details about this backwards incompatible change, contact support@scandit.com.';
-        if (view.hasImageInRender()) {
-            return new Promise((resolve, reject) => reject(errorText));
-        }
         return this.proxy.setViewForCapturedLabel(capturedLabel, view);
     }
     setAnchorForCapturedLabel(capturedLabel, anchor) {
@@ -3522,33 +3518,11 @@ var React = /*@__PURE__*/getDefaultExportFromCjs(reactExports);
 
 class LabelCaptureAdvancedOverlayView extends React.Component {
     static moduleName = 'LabelCaptureAdvancedOverlayViewComponent';
-    hasImageInRender() {
-        const element = this.render();
-        let foundImage = false;
-        if (!element)
-            return false;
-        // @ts-ignore
-        function checkIfElementIsImage(el) {
-            if (el.type.displayName && (el.type.displayName.toLowerCase() === 'image')) {
-                return foundImage = true;
-            }
-            if (!el.props.children) {
-                return false;
-            }
-            if (typeof el.props.children === 'object' && el.props.children.length > 0) {
-                return el.props.children.forEach((child) => checkIfElementIsImage(child));
-            }
-            else if (typeof el.props.children === 'object' && !el.props.children.length) {
-                return checkIfElementIsImage(el.props.children);
-            }
-        }
-        try {
-            checkIfElementIsImage(element);
-        }
-        catch (e) {
-            return foundImage;
-        }
-        return foundImage;
+    toJSON() {
+        return {
+            moduleName: LabelCaptureAdvancedOverlayView.moduleName,
+            initialProperties: this.props,
+        };
     }
     get moduleName() {
         return LabelCaptureAdvancedOverlayView.moduleName;
