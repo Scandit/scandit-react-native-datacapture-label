@@ -1,5 +1,6 @@
 import React from 'react';
-export declare class LabelCaptureAdvancedOverlayView extends React.Component {
+import { DefaultSerializeable } from 'scandit-datacapture-frameworks-core';
+export declare class LabelCaptureAdvancedOverlayView extends React.Component implements DefaultSerializeable {
     static moduleName: string;
     toJSON(): object;
     get moduleName(): string;
