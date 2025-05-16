@@ -104,16 +104,16 @@ class LabelFieldDefinition extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('name')
-], LabelFieldDefinition.prototype, "_name", undefined);
+], LabelFieldDefinition.prototype, "_name", void 0);
 __decorate([
     nameForSerialization('patterns')
-], LabelFieldDefinition.prototype, "_patterns", undefined);
+], LabelFieldDefinition.prototype, "_patterns", void 0);
 __decorate([
     nameForSerialization('optional')
-], LabelFieldDefinition.prototype, "_optional", undefined);
+], LabelFieldDefinition.prototype, "_optional", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelFieldDefinition.prototype, "_hiddenProperties", undefined);
+], LabelFieldDefinition.prototype, "_hiddenProperties", void 0);
 
 class BarcodeField extends LabelFieldDefinition {
     get symbologySettings() {
@@ -131,10 +131,10 @@ class BarcodeField extends LabelFieldDefinition {
 __decorate([
     nameForSerialization('symbologies'),
     ignoreFromSerializationIfNull
-], BarcodeField.prototype, "_symbologies", undefined);
+], BarcodeField.prototype, "_symbologies", void 0);
 __decorate([
     ignoreFromSerialization
-], BarcodeField.prototype, "_symbologySettings", undefined);
+], BarcodeField.prototype, "_symbologySettings", void 0);
 
 class LabelDateResult extends DefaultSerializeable {
     constructor(day, month, year, dayString, monthString, yearString) {
@@ -157,15 +157,15 @@ class LabelDateResult extends DefaultSerializeable {
     }
     get dayString() {
         var _a;
-        return (_a = this._dayString) !== null && _a !== undefined ? _a : '';
+        return (_a = this._dayString) !== null && _a !== void 0 ? _a : '';
     }
     get monthString() {
         var _a;
-        return (_a = this._monthString) !== null && _a !== undefined ? _a : '';
+        return (_a = this._monthString) !== null && _a !== void 0 ? _a : '';
     }
     get yearString() {
         var _a;
-        return (_a = this._yearString) !== null && _a !== undefined ? _a : '';
+        return (_a = this._yearString) !== null && _a !== void 0 ? _a : '';
     }
     static fromJSON(json) {
         return new LabelDateResult(json.day, json.month, json.year, json.dayStr, json.monthStr, json.yearStr);
@@ -173,22 +173,22 @@ class LabelDateResult extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('day')
-], LabelDateResult.prototype, "_day", undefined);
+], LabelDateResult.prototype, "_day", void 0);
 __decorate([
     nameForSerialization('month')
-], LabelDateResult.prototype, "_month", undefined);
+], LabelDateResult.prototype, "_month", void 0);
 __decorate([
     nameForSerialization('year')
-], LabelDateResult.prototype, "_year", undefined);
+], LabelDateResult.prototype, "_year", void 0);
 __decorate([
     nameForSerialization('dayStr')
-], LabelDateResult.prototype, "_dayString", undefined);
+], LabelDateResult.prototype, "_dayString", void 0);
 __decorate([
     nameForSerialization('monthStr')
-], LabelDateResult.prototype, "_monthString", undefined);
+], LabelDateResult.prototype, "_monthString", void 0);
 __decorate([
     nameForSerialization('yearStr')
-], LabelDateResult.prototype, "_yearString", undefined);
+], LabelDateResult.prototype, "_yearString", void 0);
 
 class LabelField {
     get name() {
@@ -293,13 +293,13 @@ class CustomBarcode extends BarcodeField {
 }
 __decorate([
     nameForSerialization('location')
-], CustomBarcode.prototype, "location", undefined);
+], CustomBarcode.prototype, "location", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], CustomBarcode.prototype, "_dataTypePatterns", undefined);
+], CustomBarcode.prototype, "_dataTypePatterns", void 0);
 __decorate([
     nameForSerialization('fieldType')
-], CustomBarcode.prototype, "_fieldType", undefined);
+], CustomBarcode.prototype, "_fieldType", void 0);
 
 class TextField extends LabelFieldDefinition {
 }
@@ -320,13 +320,13 @@ class CustomText extends TextField {
 }
 __decorate([
     nameForSerialization('location')
-], CustomText.prototype, "location", undefined);
+], CustomText.prototype, "location", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], CustomText.prototype, "_dataTypePatterns", undefined);
+], CustomText.prototype, "_dataTypePatterns", void 0);
 __decorate([
     nameForSerialization('fieldType')
-], CustomText.prototype, "_fieldType", undefined);
+], CustomText.prototype, "_fieldType", void 0);
 
 class ExpiryDateText extends TextField {
     constructor(name) {
@@ -347,13 +347,13 @@ class ExpiryDateText extends TextField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], ExpiryDateText.prototype, "_fieldType", undefined);
+], ExpiryDateText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], ExpiryDateText.prototype, "_dataTypePatterns", undefined);
+], ExpiryDateText.prototype, "_dataTypePatterns", void 0);
 __decorate([
     nameForSerialization('labelDateFormat')
-], ExpiryDateText.prototype, "_labelDateFormat", undefined);
+], ExpiryDateText.prototype, "_labelDateFormat", void 0);
 
 class ImeiOneBarcode extends BarcodeField {
     static initWithNameAndSymbologySettings(name, symbologySettings) {
@@ -380,7 +380,7 @@ class ImeiOneBarcode extends BarcodeField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], ImeiOneBarcode.prototype, "_fieldType", undefined);
+], ImeiOneBarcode.prototype, "_fieldType", void 0);
 
 class ImeiTwoBarcode extends BarcodeField {
     static initWithNameAndSymbologySettings(name, symbologySettings) {
@@ -407,7 +407,7 @@ class ImeiTwoBarcode extends BarcodeField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], ImeiTwoBarcode.prototype, "_fieldType", undefined);
+], ImeiTwoBarcode.prototype, "_fieldType", void 0);
 
 class LabelCaptureSession {
     get capturedLabels() {
@@ -441,9 +441,9 @@ class LabelCaptureListenerController extends BaseController {
         return controller;
     }
     subscribeListener() {
-        return __awaiter(this, undefined, undefined, function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             yield this._proxy.$registerListenerForEvents();
-            this._proxy.on$didUpdateSession = (ev) => __awaiter(this, undefined, undefined, function* () {
+            this._proxy.on$didUpdateSession = (ev) => __awaiter(this, void 0, void 0, function* () {
                 const payload = JSON.parse(ev.data);
                 const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
                 this.notifyListenersOfDidUpdateSession(session);
@@ -452,7 +452,7 @@ class LabelCaptureListenerController extends BaseController {
         });
     }
     unsubscribeListener() {
-        return __awaiter(this, undefined, undefined, function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             yield this._proxy.$unregisterListenerForEvents();
         });
     }
@@ -543,22 +543,22 @@ class LabelCapture extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('enabled')
-], LabelCapture.prototype, "_isEnabled", undefined);
+], LabelCapture.prototype, "_isEnabled", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "privateContext", undefined);
+], LabelCapture.prototype, "privateContext", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "listeners", undefined);
+], LabelCapture.prototype, "listeners", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "listenerController", undefined);
+], LabelCapture.prototype, "listenerController", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "isInListenerCallback", undefined);
+], LabelCapture.prototype, "isInListenerCallback", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "modeController", undefined);
+], LabelCapture.prototype, "modeController", void 0);
 
 var LabelCaptureAdvancedOverlayListenerEvents;
 (function (LabelCaptureAdvancedOverlayListenerEvents) {
@@ -631,7 +631,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
     }
     subscribeListener() {
         this._proxy.$registerListenerForAdvancedOverlayEvents();
-        this._proxy.on$viewForLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$viewForLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let view = null;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -640,7 +640,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             }
             yield this.setViewForCapturedLabel(label, view);
         });
-        this._proxy.on$anchorForLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$anchorForLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let anchor = Anchor.Center;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -649,7 +649,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             }
             yield this.setAnchorForCapturedLabel(label, anchor);
         });
-        this._proxy.on$offsetForLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$offsetForLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let offset = PointWithUnit.zero;
             const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -658,7 +658,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             }
             yield this.setOffsetForCapturedLabel(label, offset);
         });
-        this._proxy.on$viewForCapturedLabelField = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$viewForCapturedLabelField = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let view = null;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
@@ -667,7 +667,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             }
             yield this.setViewForCapturedLabelFieldPrivate(payload.identifier, view);
         });
-        this._proxy.on$anchorForCapturedLabelField = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$anchorForCapturedLabelField = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let anchor = Anchor.Center;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
@@ -676,7 +676,7 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             }
             yield this.setAnchorForCapturedLabelFieldPrivate(payload.identifier, anchor);
         });
-        this._proxy.on$offsetForCapturedLabelField = (ev) => __awaiter(this, undefined, undefined, function* () {
+        this._proxy.on$offsetForCapturedLabelField = (ev) => __awaiter(this, void 0, void 0, function* () {
             const payload = JSON.parse(ev.data);
             let offset = PointWithUnit.zero;
             const field = LabelField.fromJSON(JSON.parse(payload.field));
@@ -753,21 +753,22 @@ class LabelCaptureAdvancedOverlay extends DefaultSerializeable {
 }
 __decorate([
     ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "proxy", undefined);
+], LabelCaptureAdvancedOverlay.prototype, "proxy", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "mode", undefined);
+], LabelCaptureAdvancedOverlay.prototype, "mode", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "_view", undefined);
+], LabelCaptureAdvancedOverlay.prototype, "_view", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "listener", undefined);
+], LabelCaptureAdvancedOverlay.prototype, "listener", void 0);
 __decorate([
     nameForSerialization('shouldShowScanAreaGuides')
-], LabelCaptureAdvancedOverlay.prototype, "_shouldShowScanAreaGuides", undefined);
+], LabelCaptureAdvancedOverlay.prototype, "_shouldShowScanAreaGuides", void 0);
 
 class LabelCaptureSettings extends DefaultSerializeable {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     static fromJSON(json) {
         // tslint:disable-next-line:no-console
         throw new Error('This property is deprecated in favour of LabelCaptureSettings.settingsFromLabelDefinitions. Please update your code to use the new property.');
@@ -794,7 +795,7 @@ class LabelCaptureSettings extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('labelDefinitions')
-], LabelCaptureSettings.prototype, "_definitions", undefined);
+], LabelCaptureSettings.prototype, "_definitions", void 0);
 
 var LabelDateComponentFormat;
 (function (LabelDateComponentFormat) {
@@ -818,10 +819,10 @@ class LabelDateFormat extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('componentFormat')
-], LabelDateFormat.prototype, "_componentFormat", undefined);
+], LabelDateFormat.prototype, "_componentFormat", void 0);
 __decorate([
     nameForSerialization('acceptPartialDates')
-], LabelDateFormat.prototype, "_acceptPartialDates", undefined);
+], LabelDateFormat.prototype, "_acceptPartialDates", void 0);
 
 class LabelDefinition extends DefaultSerializeable {
     get name() {
@@ -866,13 +867,13 @@ class LabelDefinition extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('name')
-], LabelDefinition.prototype, "_name", undefined);
+], LabelDefinition.prototype, "_name", void 0);
 __decorate([
     nameForSerialization('fields')
-], LabelDefinition.prototype, "_fields", undefined);
+], LabelDefinition.prototype, "_fields", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelDefinition.prototype, "_hiddenProperties", undefined);
+], LabelDefinition.prototype, "_hiddenProperties", void 0);
 
 var LabelFieldLocationType;
 (function (LabelFieldLocationType) {
@@ -957,11 +958,11 @@ class LabelFieldLocation extends DefaultSerializeable {
 }
 __decorate([
     nameForSerialization('rect')
-], LabelFieldLocation.prototype, "_rect", undefined);
+], LabelFieldLocation.prototype, "_rect", void 0);
 __decorate([
     nameForSerialization('type'),
     ignoreFromSerializationIfNull
-], LabelFieldLocation.prototype, "_type", undefined);
+], LabelFieldLocation.prototype, "_type", void 0);
 
 var LabelFieldState;
 (function (LabelFieldState) {
@@ -996,13 +997,13 @@ class PackingDateText extends TextField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], PackingDateText.prototype, "_fieldType", undefined);
+], PackingDateText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], PackingDateText.prototype, "_dataTypePatterns", undefined);
+], PackingDateText.prototype, "_dataTypePatterns", void 0);
 __decorate([
     nameForSerialization('labelDateFormat')
-], PackingDateText.prototype, "_labelDateFormat", undefined);
+], PackingDateText.prototype, "_labelDateFormat", void 0);
 
 class PartNumberBarcode extends BarcodeField {
     static initWithNameAndSymbologySettings(name, symbologySettings) {
@@ -1029,7 +1030,7 @@ class PartNumberBarcode extends BarcodeField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], PartNumberBarcode.prototype, "_fieldType", undefined);
+], PartNumberBarcode.prototype, "_fieldType", void 0);
 
 class SerialNumberBarcode extends BarcodeField {
     static initWithNameAndSymbologySettings(name, symbologySettings) {
@@ -1056,7 +1057,7 @@ class SerialNumberBarcode extends BarcodeField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], SerialNumberBarcode.prototype, "_fieldType", undefined);
+], SerialNumberBarcode.prototype, "_fieldType", void 0);
 
 class TotalPriceText extends TextField {
     constructor(name) {
@@ -1066,7 +1067,7 @@ class TotalPriceText extends TextField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], TotalPriceText.prototype, "_fieldType", undefined);
+], TotalPriceText.prototype, "_fieldType", void 0);
 
 class UnitPriceText extends TextField {
     constructor(name) {
@@ -1076,7 +1077,7 @@ class UnitPriceText extends TextField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], UnitPriceText.prototype, "_fieldType", undefined);
+], UnitPriceText.prototype, "_fieldType", void 0);
 
 class WeightText extends TextField {
     constructor(name) {
@@ -1086,7 +1087,7 @@ class WeightText extends TextField {
 }
 __decorate([
     nameForSerialization('fieldType')
-], WeightText.prototype, "_fieldType", undefined);
+], WeightText.prototype, "_fieldType", void 0);
 
 var LabelCaptureBasicOverlayListenerEvents;
 (function (LabelCaptureBasicOverlayListenerEvents) {
@@ -1117,9 +1118,9 @@ class LabelCaptureBasicOverlayController extends BaseController {
         });
     }
     subscribeListener() {
-        return __awaiter(this, undefined, undefined, function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             yield this._proxy.$registerListenerForBasicOverlayEvents();
-            this._proxy.on$brushForFieldOfLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+            this._proxy.on$brushForFieldOfLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
                 const payload = JSON.parse(ev.data);
                 let brush = this.overlay.capturedFieldBrush;
                 const field = LabelField.fromJSON(JSON.parse(payload.field));
@@ -1129,7 +1130,7 @@ class LabelCaptureBasicOverlayController extends BaseController {
                 }
                 yield this.setBrushForFieldOfLabel(brush, field, label);
             });
-            this._proxy.on$brushForLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+            this._proxy.on$brushForLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
                 const payload = JSON.parse(ev.data);
                 let brush = this.overlay.labelBrush;
                 const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -1138,7 +1139,7 @@ class LabelCaptureBasicOverlayController extends BaseController {
                 }
                 yield this.setBrushForLabel(brush, label);
             });
-            this._proxy.on$didTapLabel = (ev) => __awaiter(this, undefined, undefined, function* () {
+            this._proxy.on$didTapLabel = (ev) => __awaiter(this, void 0, void 0, function* () {
                 const payload = JSON.parse(ev.data);
                 if (this.overlay.listener && this.overlay.listener.didTapLabel) {
                     const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
@@ -1148,7 +1149,7 @@ class LabelCaptureBasicOverlayController extends BaseController {
         });
     }
     unsubscribeListener() {
-        return __awaiter(this, undefined, undefined, function* () {
+        return __awaiter(this, void 0, void 0, function* () {
             yield this._proxy.$unregisterListenerForBasicOverlayEvents();
         });
     }
@@ -1248,31 +1249,31 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
 }
 __decorate([
     ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "mode", undefined);
+], LabelCaptureBasicOverlay.prototype, "mode", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "_view", undefined);
+], LabelCaptureBasicOverlay.prototype, "_view", void 0);
 __decorate([
     nameForSerialization('defaultPredictedFieldBrush')
-], LabelCaptureBasicOverlay.prototype, "_predictedFieldBrush", undefined);
+], LabelCaptureBasicOverlay.prototype, "_predictedFieldBrush", void 0);
 __decorate([
     nameForSerialization('defaultCapturedFieldBrush')
-], LabelCaptureBasicOverlay.prototype, "_capturedFieldBrush", undefined);
+], LabelCaptureBasicOverlay.prototype, "_capturedFieldBrush", void 0);
 __decorate([
     nameForSerialization('defaultLabelBrush')
-], LabelCaptureBasicOverlay.prototype, "_labelBrush", undefined);
+], LabelCaptureBasicOverlay.prototype, "_labelBrush", void 0);
 __decorate([
     nameForSerialization('shouldShowScanAreaGuides')
-], LabelCaptureBasicOverlay.prototype, "_shouldShowScanAreaGuides", undefined);
+], LabelCaptureBasicOverlay.prototype, "_shouldShowScanAreaGuides", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "listener", undefined);
+], LabelCaptureBasicOverlay.prototype, "listener", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "controller", undefined);
+], LabelCaptureBasicOverlay.prototype, "controller", void 0);
 __decorate([
     serializationDefault(NoViewfinder),
     nameForSerialization('viewfinder')
-], LabelCaptureBasicOverlay.prototype, "_viewfinder", undefined);
+], LabelCaptureBasicOverlay.prototype, "_viewfinder", void 0);
 
 export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayController, LabelCaptureAdvancedOverlayListenerEvents, LabelCaptureBasicOverlay, LabelCaptureBasicOverlayController, LabelCaptureBasicOverlayListenerEvents, LabelCaptureController, LabelCaptureListenerController, LabelCaptureListenerEvents, LabelCaptureSession, LabelCaptureSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText, getLabelCaptureDefaults, loadLabelCaptureDefaults };
