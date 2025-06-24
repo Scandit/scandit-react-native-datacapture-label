@@ -67,9 +67,8 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
 
     @objc(setModeEnabledState:)
     func setModeEnabledState(_ data: [String: Any]) {
-        let modeId = data["modeId"] as? Int ?? -1
         if let enabled = data["isEnabled"] as? Bool {
-            labelModule.setModeEnabled(modeId: modeId, enabled: enabled)
+            labelModule.setModeEnabled(enabled: enabled)
         }
     }
 
@@ -130,8 +129,8 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
                      let viewForLabel = ViewForLabel(view: rootView,
                                                      trackingId: label.trackingId)
                      labelModule.setViewForCapturedLabel(viewForLabel: viewForLabel, result: result)
+                     return
                  }
-                 return
              }
          } catch {
              result.reject(error: error)
@@ -155,10 +154,7 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
         let viewJson = data["view"] as? String
 
         do {
-            guard let labelAndField = labelModule.labelAndField(for: labelFieldIdentifier) else {
-                result.success()
-                return
-            }
+            let labelAndField = try labelModule.labelAndField(for: labelFieldIdentifier)
 
             if let viewJson = viewJson {
                 let config = try JSONSerialization.jsonObject(with: viewJson.data(using: .utf8)!,
@@ -184,6 +180,8 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
                     result: result
                  )
              }
+
+            result.success(result: nil)
          } catch {
              result.reject(error: error)
              return
@@ -252,8 +250,8 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
     func setOffsetForCapturedLabelField(_ data: [String: Any],
                                   resolve: @escaping RCTPromiseResolveBlock,
                                   reject: @escaping RCTPromiseRejectBlock) {
-        guard let offsetJson = data["offset"] as? String,
-              let fieldLabelId = data["identifier"] as? String else {
+        guard let offsetJson = data["offsetJson"] as? String,
+              let fieldLabelId = data["trackingId"] as? String else {
             reject("error", "One or more required fields are missing or invalid", nil)
             return
         }
@@ -280,12 +278,12 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
         }
     }
 
-    @objc func registerListenerForEvents(_ data: [String: Any]) {
-        labelModule.addListener(data["modeId"] as? Int ?? -1)
+    @objc func registerListenerForEvents() {
+        labelModule.addListener()
     }
 
-    @objc func unregisterListenerForEvents(_ data: [String: Any]) {
-        labelModule.removeListener(data["modeId"] as? Int ?? -1)
+    @objc func unregisterListenerForEvents() {
+        labelModule.removeListener()
     }
 
     @objc func registerListenerForBasicOverlayEvents() {
@@ -334,10 +332,8 @@ class ScanditDataCaptureLabel: RCTEventEmitter {
             reject("error", "Settings JSON is missing or invalid", nil)
             return
         }
-        
-        let modeId = data["modeId"] as? Int ?? -1
 
-        labelModule.applyModeSettings(modeId: modeId, modeSettingsJson: settingsJson,
+        labelModule.applyModeSettings(modeSettingsJson: settingsJson,
                                     result: .create(resolve, reject))
     }
 

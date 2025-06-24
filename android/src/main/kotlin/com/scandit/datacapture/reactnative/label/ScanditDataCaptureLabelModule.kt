@@ -12,7 +12,6 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
-import com.scandit.datacapture.frameworks.core.extensions.MODE_ID_KEY
 import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
 import com.scandit.datacapture.reactnative.barcode.batch.nativeViewFromJson
@@ -37,13 +36,13 @@ class ScanditDataCaptureLabelModule(
     )
 
     @ReactMethod
-    fun registerListenerForEvents(readableMap: ReadableMap) {
-        labelCaptureModule.addListener(readableMap.getInt(MODE_ID_KEY))
+    fun registerListenerForEvents() {
+        labelCaptureModule.addListener()
     }
 
     @ReactMethod
-    fun unregisterListenerForEvents(readableMap: ReadableMap) {
-        labelCaptureModule.removeListener(readableMap.getInt(MODE_ID_KEY))
+    fun unregisterListenerForEvents() {
+        labelCaptureModule.removeListener()
     }
 
     @ReactMethod
@@ -191,7 +190,7 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun setOffsetForCapturedLabelField(
+    fun setOffsetForLabelField(
         readableMap: ReadableMap,
         promise: Promise
     ) {
@@ -217,9 +216,8 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setModeEnabledState(readableMap: ReadableMap) {
-        val modeId = readableMap.getInt(MODE_ID_KEY)
         val enabled = readableMap.getBoolean("isEnabled")
-        labelCaptureModule.setModeEnabled(modeId, enabled)
+        labelCaptureModule.setModeEnabled(enabled)
     }
 
     @ReactMethod
@@ -236,19 +234,8 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun updateLabelCaptureSettings(readableMap: ReadableMap, promise: Promise) {
-        val modeId = readableMap.getInt(MODE_ID_KEY)
         val settingsJson = readableMap.getString("settingsJson") ?: ""
-        labelCaptureModule.applyModeSettings(modeId, settingsJson, ReactNativeResult(promise))
-    }
-
-    @ReactMethod
-    fun addListener(@Suppress("UNUSED_PARAMETER") eventName: String?) {
-        // Keep: Required for RN built in Event Emitter Calls.
-    }
-
-    @ReactMethod
-    fun removeListeners(@Suppress("UNUSED_PARAMETER") count: Int?) {
-        // Keep: Required for RN built in Event Emitter Calls.
+        labelCaptureModule.applyModeSettings(settingsJson, ReactNativeResult(promise))
     }
 
     companion object {
