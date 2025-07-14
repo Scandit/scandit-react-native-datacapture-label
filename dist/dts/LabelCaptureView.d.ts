@@ -1,0 +1,35 @@
+import React from 'react';
+import { Brush, CameraPosition, CameraSettings, DataCaptureContext, FrameSourceState, TorchState, TorchSwitchControl, ZoomSwitchControl, Viewfinder, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
+import { LabelCapture, LabelCaptureBasicOverlay, LabelCaptureSettings, CapturedLabel, LabelCaptureSession, LabelField, LabelCaptureAdvancedOverlay } from 'scandit-datacapture-frameworks-label';
+import { LabelCaptureAdvancedOverlayView } from './LabelCaptureAdvancedOverlayView';
+interface LabelCaptureViewProps {
+    context: DataCaptureContext;
+    isEnabled: boolean;
+    labelCaptureSettings?: LabelCaptureSettings | null;
+    brush?: Brush | null;
+    predictedFieldBrush?: Brush | null;
+    capturedFieldBrush?: Brush | null;
+    labelBrush?: Brush | null;
+    shouldShowScanAreaGuides?: boolean;
+    viewfinder?: Viewfinder | null;
+    cameraSettings?: CameraSettings | null;
+    desiredCameraState?: FrameSourceState;
+    desiredCameraPosition?: CameraPosition | null;
+    desiredTorchState?: TorchState | null;
+    torchSwitchControl?: TorchSwitchControl | null;
+    zoomSwitchControl?: ZoomSwitchControl | null;
+    style: any;
+    navigation?: any;
+    didUpdateSession?(labelCapture: LabelCapture, session: LabelCaptureSession): void;
+    viewForCapturedLabel?(overlay: LabelCaptureAdvancedOverlay, label: CapturedLabel): LabelCaptureAdvancedOverlayView | null;
+    anchorForCapturedLabel?(overlay: LabelCaptureAdvancedOverlay, label: CapturedLabel): Anchor;
+    offsetForCapturedLabel?(overlay: LabelCaptureAdvancedOverlay, label: CapturedLabel): PointWithUnit;
+    viewForCapturedLabelField?(overlay: LabelCaptureAdvancedOverlay, field: LabelField): LabelCaptureAdvancedOverlayView | null;
+    anchorForCapturedLabelField?(overlay: LabelCaptureAdvancedOverlay, field: LabelField): Anchor;
+    offsetForCapturedLabelField?(overlay: LabelCaptureAdvancedOverlay, field: LabelField): PointWithUnit;
+    brushForFieldOfLabel?(overlay: LabelCaptureBasicOverlay, field: LabelField, label: CapturedLabel): Brush | null;
+    brushForLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): Brush | null;
+    didTapLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): void;
+}
+export declare const LabelCaptureView: React.ForwardRefExoticComponent<LabelCaptureViewProps & React.RefAttributes<unknown>>;
+export {};

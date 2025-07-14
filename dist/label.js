@@ -344,6 +344,9 @@ class ExpiryDateText extends TextField {
     get dataTypePatterns() {
         return this._dataTypePatterns;
     }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
+    }
 }
 __decorate([
     nameForSerialization('fieldType')
@@ -442,7 +445,7 @@ class LabelCaptureListenerController extends BaseController {
     }
     subscribeListener() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._proxy.$registerListenerForEvents();
+            yield this._proxy.$registerListenerForEvents({ modeId: this.mode.modeId });
             this._proxy.on$didUpdateSession = (ev) => __awaiter(this, void 0, void 0, function* () {
                 const payload = JSON.parse(ev.data);
                 const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
@@ -453,7 +456,7 @@ class LabelCaptureListenerController extends BaseController {
     }
     unsubscribeListener() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._proxy.$unregisterListenerForEvents();
+            yield this._proxy.$unregisterListenerForEvents({ modeId: this.mode.modeId });
         });
     }
     notifyListenersOfDidUpdateSession(session) {
@@ -469,14 +472,15 @@ class LabelCaptureListenerController extends BaseController {
 }
 
 class LabelCaptureController extends BaseController {
-    constructor() {
+    constructor(mode) {
         super('LabelCaptureProxy');
+        this.mode = mode;
     }
     setModeEnabledState(isEnabled) {
-        return this._proxy.$setModeEnabledState({ isEnabled });
+        return this._proxy.$setModeEnabledState({ modeId: this.mode.modeId, isEnabled });
     }
     updateLabelCaptureSettings(settingsJson) {
-        return this._proxy.$updateLabelCaptureSettings({ settingsJson });
+        return this._proxy.$updateLabelCaptureSettings({ modeId: this.mode.modeId, settingsJson });
     }
 }
 
@@ -517,12 +521,14 @@ class LabelCapture extends DefaultSerializeable {
     constructor() {
         super();
         this.type = 'labelCapture';
+        this.modeId = Math.floor(Math.random() * 1000000);
         this._isEnabled = true;
+        this.hasListeners = false;
         this.privateContext = null;
         this.listeners = [];
         this.isInListenerCallback = false;
         this.listenerController = LabelCaptureListenerController.forLabelCapture(this);
-        this.modeController = new LabelCaptureController();
+        this.modeController = new LabelCaptureController(this);
     }
     applySettings(settings) {
         this.settings = settings;
@@ -533,12 +539,14 @@ class LabelCapture extends DefaultSerializeable {
             return;
         }
         this.listeners.push(listener);
+        this.hasListeners = this.listeners.length > 0;
     }
     removeListener(listener) {
         if (!this.listeners.includes(listener)) {
             return;
         }
         this.listeners.splice(this.listeners.indexOf(listener), 1);
+        this.hasListeners = this.listeners.length > 0;
     }
 }
 __decorate([
@@ -773,6 +781,9 @@ class LabelCaptureSettings extends DefaultSerializeable {
         // tslint:disable-next-line:no-console
         throw new Error('This property is deprecated in favour of LabelCaptureSettings.settingsFromLabelDefinitions. Please update your code to use the new property.');
     }
+    static get barcodeDefaults() {
+        return getBarcodeDefaults();
+    }
     static settingsFromLabelDefinitions(definitions, properties) {
         const settings = new LabelCaptureSettings();
         settings._definitions = definitions;
@@ -786,6 +797,9 @@ class LabelCaptureSettings extends DefaultSerializeable {
         this._definitions = [];
         this.properties = {};
     }
+    settingsForSymbology(symbology) {
+        return LabelCaptureSettings.barcodeDefaults.SymbologySettings[symbology];
+    }
     setProperty(name, value) {
         this[name] = value;
     }
@@ -796,6 +810,9 @@ class LabelCaptureSettings extends DefaultSerializeable {
 __decorate([
     nameForSerialization('labelDefinitions')
 ], LabelCaptureSettings.prototype, "_definitions", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelCaptureSettings, "barcodeDefaults", null);
 
 var LabelDateComponentFormat;
 (function (LabelDateComponentFormat) {
@@ -1063,31 +1080,61 @@ class TotalPriceText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'totalPriceText';
+        this._dataTypePatterns = [];
+    }
+    get dataTypePatterns() {
+        return this._dataTypePatterns;
+    }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
     }
 }
 __decorate([
     nameForSerialization('fieldType')
 ], TotalPriceText.prototype, "_fieldType", void 0);
+__decorate([
+    nameForSerialization('dataTypePatterns')
+], TotalPriceText.prototype, "_dataTypePatterns", void 0);
 
 class UnitPriceText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'unitPriceText';
+        this._dataTypePatterns = [];
+    }
+    get dataTypePatterns() {
+        return this._dataTypePatterns;
+    }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
     }
 }
 __decorate([
     nameForSerialization('fieldType')
 ], UnitPriceText.prototype, "_fieldType", void 0);
+__decorate([
+    nameForSerialization('dataTypePatterns')
+], UnitPriceText.prototype, "_dataTypePatterns", void 0);
 
 class WeightText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'weightText';
+        this._dataTypePatterns = [];
+    }
+    get dataTypePatterns() {
+        return this._dataTypePatterns;
+    }
+    set dataTypePatterns(value) {
+        this._dataTypePatterns = value;
     }
 }
 __decorate([
     nameForSerialization('fieldType')
 ], WeightText.prototype, "_fieldType", void 0);
+__decorate([
+    nameForSerialization('dataTypePatterns')
+], WeightText.prototype, "_dataTypePatterns", void 0);
 
 var LabelCaptureBasicOverlayListenerEvents;
 (function (LabelCaptureBasicOverlayListenerEvents) {
