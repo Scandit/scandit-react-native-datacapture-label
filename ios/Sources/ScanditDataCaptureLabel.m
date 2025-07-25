@@ -56,9 +56,9 @@ RCT_EXTERN_METHOD(clearCapturedLabelViews
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(registerListenerForEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(registerListenerForEvents)
 
-RCT_EXTERN_METHOD(unregisterListenerForEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(unregisterListenerForEvents)
 
 RCT_EXTERN_METHOD(registerListenerForBasicOverlayEvents)
 
@@ -82,4 +82,5 @@ RCT_EXTERN_METHOD(updateLabelCaptureSettings
                   : (NSDictionary *)data resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
+
 @end
