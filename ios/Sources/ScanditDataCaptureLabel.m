@@ -8,47 +8,59 @@
 
 @interface RCT_EXTERN_MODULE (ScanditDataCaptureLabel, RCTEventEmitter)
 
-RCT_EXTERN_METHOD(finishDidUpdateSessionCallback : (NSDictionary *)data)
+RCT_EXTERN_METHOD(finishDidUpdateSessionCallback : (BOOL)enabled)
 
-RCT_EXTERN_METHOD(setModeEnabledState : (NSDictionary *)data)
+RCT_EXTERN_METHOD(setModeEnabledState : (BOOL)enabled)
 
 RCT_EXTERN_METHOD(setBrushForFieldOfLabel
-                  : (NSDictionary *)data resolver
+                  : (NSString *)brushJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(setBrushForLabel
-                  : (NSDictionary *)data resolver
+                  : (NSString *)brushJSON labelId
+                  : (NSInteger)labelId resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(setViewForFieldOfLabel
+                  : (NSString *)viewJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(setViewForCapturedLabel
-                  : (NSDictionary *)data resolver
+                  : (NSString *)viewJSON labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(setViewForCapturedLabelField
-                  : (NSDictionary *)data resolver
+RCT_EXTERN_METHOD(setAnchorForFieldOfLabel
+                  : (NSString *)anchorJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(setAnchorForCapturedLabel
-                  : (NSDictionary *)data resolver
+                  : (NSString *)anchorJSON labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(setAnchorForCapturedLabelField
-                  : (NSDictionary *)data resolver
+RCT_EXTERN_METHOD(setOffsetForFieldOfLabel
+                  : (NSString *)offsetJSON fieldName
+                  : (NSString *)fieldName labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(setOffsetForCapturedLabel
-                  : (NSDictionary *)data resolver
-                  : (RCTPromiseResolveBlock)resolve rejecter
-                  : (RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(setOffsetForCapturedLabelField
-                  : (NSDictionary *)data resolver
+                  : (NSString *)offsetJSON labelId
+                  : (NSInteger)labelId resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
@@ -69,17 +81,17 @@ RCT_EXTERN_METHOD(registerListenerForAdvancedOverlayEvents)
 RCT_EXTERN_METHOD(unregisterListenerForAdvancedOverlayEvents)
 
 RCT_EXTERN_METHOD(updateLabelCaptureBasicOverlay
-                  : (NSDictionary *)data resolve
+                  : (NSString *)overlayJson resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(updateLabelCaptureAdvancedOverlay
-                  : (NSDictionary *)data resolve
+                  : (NSString *)overlayJson resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(updateLabelCaptureSettings
-                  : (NSDictionary *)data resolve
+RCT_EXTERN_METHOD(applyLabelCaptureModeSettings
+                  : (NSString *)modeSettingsJson resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
 
