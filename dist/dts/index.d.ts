@@ -8,4 +8,6 @@ export { LabelDefinition, LabelFieldDefinition } from 'scandit-datacapture-frame
 export { LabelFieldLocation, LabelFieldLocationType } from 'scandit-datacapture-frameworks-label';
 export { BarcodeField, TextField, CustomBarcode, CustomText, SerialNumberBarcode, PartNumberBarcode, ImeiOneBarcode, ImeiTwoBarcode, UnitPriceText, TotalPriceText, WeightText, PackingDateText, ExpiryDateText } from 'scandit-datacapture-frameworks-label';
 export { LabelDateFormat, LabelDateResult, LabelDateComponentFormat } from 'scandit-datacapture-frameworks-label';
+export { LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowListener, LabelCaptureValidationFlowSettings } from 'scandit-datacapture-frameworks-label';
 export * from './LabelCaptureAdvancedOverlayView';
+export * from './LabelCaptureView';
