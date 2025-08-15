@@ -12,7 +12,6 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableMap
-import com.scandit.datacapture.frameworks.core.extensions.DATA_CAPTURE_VIEW_ID_KEY
 import com.scandit.datacapture.frameworks.core.extensions.MODE_ID_KEY
 import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
@@ -48,25 +47,23 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun registerListenerForBasicOverlayEvents(readableMap: ReadableMap) {
-        labelCaptureModule.addBasicOverlayListener(readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY))
+    fun registerListenerForBasicOverlayEvents() {
+        labelCaptureModule.addBasicOverlayListener()
     }
 
     @ReactMethod
-    fun unregisterListenerForBasicOverlayEvents(readableMap: ReadableMap) {
-        labelCaptureModule.removeBasicOverlayListener(readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY))
+    fun unregisterListenerForBasicOverlayEvents() {
+        labelCaptureModule.removeBasicOverlayListener()
     }
 
     @ReactMethod
-    fun registerListenerForAdvancedOverlayEvents(readableMap: ReadableMap) {
-        labelCaptureModule.addAdvancedOverlayListener(readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY))
+    fun registerListenerForAdvancedOverlayEvents() {
+        labelCaptureModule.addAdvancedOverlayListener()
     }
 
     @ReactMethod
-    fun unregisterListenerForAdvancedOverlayEvents(readableMap: ReadableMap) {
-        labelCaptureModule.removeAdvancedOverlayListener(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY)
-        )
+    fun unregisterListenerForAdvancedOverlayEvents() {
+        labelCaptureModule.removeAdvancedOverlayListener()
     }
 
     @ReactMethod
@@ -83,7 +80,6 @@ class ScanditDataCaptureLabelModule(
         val brushJson = readableMap.getString("brushJson")
         val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setBrushForLabel(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             brushJson,
             labelId,
             ReactNativeResult(promise)
@@ -100,7 +96,6 @@ class ScanditDataCaptureLabelModule(
         val labelId = readableMap.getInt("trackingId")
 
         labelCaptureModule.setBrushForFieldOfLabel(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             brushJson,
             fieldName,
             labelId,
@@ -116,7 +111,6 @@ class ScanditDataCaptureLabelModule(
         val viewJson = readableMap.getString("jsonView")
         val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setViewForCapturedLabel(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             viewJson,
             labelId,
             object : ViewFromJsonResolver {
@@ -153,12 +147,9 @@ class ScanditDataCaptureLabelModule(
         readableMap: ReadableMap,
         promise: Promise
     ) {
-        val anchor = readableMap.getString("anchor") ?: return run {
-            promise.reject(IllegalArgumentException("anchor"))
-        }
+        val anchor = readableMap.getString("anchor")!!
         val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setAnchorForCapturedLabel(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             anchor,
             labelId,
             ReactNativeResult(promise)
@@ -179,7 +170,6 @@ class ScanditDataCaptureLabelModule(
             return
         }
         labelCaptureModule.setAnchorForLabelField(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             anchor,
             labelFieldId,
             ReactNativeResult(promise)
@@ -191,12 +181,9 @@ class ScanditDataCaptureLabelModule(
         readableMap: ReadableMap,
         promise: Promise
     ) {
-        val offsetJson = readableMap.getString("offsetJson") ?: return run {
-            promise.reject(IllegalArgumentException("offsetJson"))
-        }
+        val offsetJson = readableMap.getString("offsetJson")!!
         val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setOffsetForCapturedLabel(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             offsetJson,
             labelId,
             ReactNativeResult(promise)
@@ -217,7 +204,6 @@ class ScanditDataCaptureLabelModule(
             return
         }
         labelCaptureModule.setOffsetForLabelField(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
             offset,
             labelFieldId,
             ReactNativeResult(promise)
@@ -225,11 +211,8 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun clearCapturedLabelViews(readableMap: ReadableMap, promise: Promise) {
-        labelCaptureModule.clearCapturedLabelViews(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
-            ReactNativeResult(promise)
-        )
+    fun clearCapturedLabelViews(promise: Promise) {
+        labelCaptureModule.clearCapturedLabelViews(ReactNativeResult(promise))
     }
 
     @ReactMethod
@@ -242,23 +225,13 @@ class ScanditDataCaptureLabelModule(
     @ReactMethod
     fun updateLabelCaptureBasicOverlay(readableMap: ReadableMap, promise: Promise) {
         val overlayJson = readableMap.getString("basicOverlayJson") ?: ""
-        labelCaptureModule.updateBasicOverlay(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
-            overlayJson,
-            ReactNativeResult(promise)
-        )
+        labelCaptureModule.updateBasicOverlay(overlayJson, ReactNativeResult(promise))
     }
 
     @ReactMethod
     fun updateLabelCaptureAdvancedOverlay(readableMap: ReadableMap, promise: Promise) {
-        val overlayJson = readableMap.getString("advancedOverlayJson") ?: return run {
-            promise.reject(IllegalArgumentException("advancedOverlayJson"))
-        }
-        labelCaptureModule.updateAdvancedOverlay(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
-            overlayJson,
-            ReactNativeResult(promise)
-        )
+        val overlayJson = readableMap.getString("advancedOverlayJson")!!
+        labelCaptureModule.updateAdvancedOverlay(overlayJson, ReactNativeResult(promise))
     }
 
     @ReactMethod
@@ -266,30 +239,6 @@ class ScanditDataCaptureLabelModule(
         val modeId = readableMap.getInt(MODE_ID_KEY)
         val settingsJson = readableMap.getString("settingsJson") ?: ""
         labelCaptureModule.applyModeSettings(modeId, settingsJson, ReactNativeResult(promise))
-    }
-
-    @ReactMethod
-    fun registerListenerForValidationFlowEvents(readableMap: ReadableMap) {
-        labelCaptureModule.addValidationFlowOverlayListener(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY)
-        )
-    }
-
-    @ReactMethod
-    fun unregisterListenerForValidationFlowEvents(readableMap: ReadableMap) {
-        labelCaptureModule.removeValidationFlowOverlayListener(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY)
-        )
-    }
-
-    @ReactMethod
-    fun updateLabelCaptureOverlay(readableMap: ReadableMap, promise: Promise) {
-        val overlayJson = readableMap.getString("overlayJson") ?: ""
-        labelCaptureModule.updateValidationFlowOverlay(
-            readableMap.getInt(DATA_CAPTURE_VIEW_ID_KEY),
-            overlayJson,
-            ReactNativeResult(promise)
-        )
     }
 
     @ReactMethod
