@@ -92,4 +92,9 @@ RCT_EXTERN_METHOD(updateLabelCaptureSettings
                   : (NSDictionary *)data resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
+
+RCT_EXTERN_METHOD(updateLabelCaptureFeedback
+                  : (NSDictionary *)data resolve
+                  : (RCTPromiseResolveBlock)resolve reject
+                  : (RCTPromiseRejectBlock)reject)
 @end

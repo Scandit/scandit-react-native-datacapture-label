@@ -2,7 +2,7 @@ import { Camera, CameraPosition, FrameSourceState, DataCaptureView, initCoreProx
 import { ScreenStateManager, FactoryMaker, createNativeProxy } from 'scandit-react-native-datacapture-core/dist/core';
 import { NativeModules, AppState } from 'react-native';
 import { LabelCaptureSettings, LabelCapture, loadLabelCaptureDefaults, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay } from './label.js';
-export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
+export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureFeedback, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
 import React, { forwardRef, useRef, useMemo, useEffect } from 'react';
 import 'scandit-react-native-datacapture-barcode/dist/barcode';
 
@@ -92,6 +92,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
             LabelCaptureSettings.settingsFromLabelDefinitions([], {});
         // Create the label capture instance with context and settings
         labelCaptureModeRef.current = LabelCapture.forContext(props.context, settings);
+        labelCaptureModeRef.current.parentId = viewId.current;
         return labelCaptureModeRef.current;
     }
     function getBasicOverlay() {
@@ -166,7 +167,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
         });
         return () => {
             subscription.remove();
-            doCleanup();
+            doDestroy();
         };
     }, []);
     const doSetup = () => {
@@ -177,11 +178,11 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
         /* Handling Data Capture Context */
         props.context.setFrameSource(getCamera());
         /* Adding Label Capture mode */
-        getMode();
+        props.context.addMode(getMode());
         /* Adding Label Capture Overlays */
         if (viewRef.current) {
+            viewRef.current.addOverlay(getBasicOverlay());
             if (!props.useValidationFlow) {
-                viewRef.current.addOverlay(getBasicOverlay());
                 viewRef.current.addOverlay(getAdvancedOverlay());
             }
             else {
@@ -210,14 +211,28 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
         if (labelCaptureModeRef.current) {
             props.context.removeMode(labelCaptureModeRef.current);
         }
-        labelCaptureModeRef.current = null;
         /* Cleaning Overlays */
         if (viewRef.current) {
             viewRef.current.view?.overlays?.forEach((overlay) => viewRef.current?.view?.removeOverlay(overlay));
         }
+        // Execute this after 1 second to avoid turning off the camera and on again
+        // when navigating back to another screen that handles camera
+        setTimeout(() => {
+            /* Closing the camera if camera is active */
+            if (screenStateManager.isScreenActive(viewId.current)) {
+                getCamera()?.switchToDesiredState(FrameSourceState.Off);
+            }
+        }, 1000);
+    };
+    const doDestroy = () => {
+        doCleanup();
+        labelCaptureModeRef.current = null;
+        torchSwitchControl.current = null;
+        zoomSwitchControl.current = null;
         basicOverlayRef.current = null;
         advancedOverlayRef.current = null;
         validationFlowOverlayRef.current = null;
+        cameraRef.current = null;
     };
     /* LABEL CAPTURE MODE */
     useEffect(() => {
@@ -427,7 +442,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
             console.error(e);
         }
     }, [props.navigation]);
-    return (React.createElement(DataCaptureView, { context: props.context, style: { flex: 1 }, ref: viewRef }));
+    return (React.createElement(DataCaptureView, { context: props.context, style: { flex: 1 }, parentId: viewId.current, ref: viewRef }));
 });
 
 initLabelDefaults();

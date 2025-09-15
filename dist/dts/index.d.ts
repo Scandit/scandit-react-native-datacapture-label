@@ -1,4 +1,4 @@
-export { LabelCapture } from 'scandit-datacapture-frameworks-label';
+export { LabelCapture, LabelCaptureFeedback } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureBasicOverlay, LabelCaptureBasicOverlayListener } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayListener } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureListener } from 'scandit-datacapture-frameworks-label';

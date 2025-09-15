@@ -74,8 +74,8 @@ class ScanditDataCaptureLabel: AdvancedOverlayContainer {
     
     @objc(finishDidUpdateSessionCallback:)
     func finishDidUpdateSessionCallback(_ data: [String: Any]) {
-        if let enabled = data["isEnabled"] as? Bool {
-            labelModule.finishDidUpdateCallback(enabled: enabled)
+        if let enabled = data["isEnabled"] as? Bool, let modeId = data.modeId as? Int {
+            labelModule.finishDidUpdateCallback(modeId: modeId, enabled: enabled)
         }
     }
     
@@ -146,7 +146,10 @@ class ScanditDataCaptureLabel: AdvancedOverlayContainer {
                                                               options: []) as! [String: Any]
                 let jsView = try JSView(with: config)
                 try dispatchMainSync {
-                    let rootView = rootViewWith(jsView: jsView)
+                    guard let rootView = rootViewWith(jsView: jsView) else {
+                        reject("error", "Root view could not be created", nil)
+                        return
+                    }
                     let label = try labelModule.label(for: labelId)
                     trackedLabelViewCache[rootView] = TrackedLabelViewData(capturedLabel: label, dataCaptureViewId: dataCaptureViewId)
                     let viewForLabel = ViewForLabel(dataCaptureViewId: dataCaptureViewId,
@@ -195,7 +198,10 @@ class ScanditDataCaptureLabel: AdvancedOverlayContainer {
                 let jsView = try JSView(with: config)
                 
                 dispatchMain {
-                    let rootView = self.rootViewWith(jsView: jsView)
+                    guard let rootView = self.rootViewWith(jsView: jsView) else {
+                        reject("error", "Root view could not be created", nil)
+                        return
+                    }
                     self.trackedLabelViewCache[rootView] = TrackedLabelViewData(capturedLabel: labelAndField.0, labelField: labelAndField.1, dataCaptureViewId: dataCaptureViewId)
                     self.labelModule.setViewForCapturedLabelField(
                         dataCaptureViewId,
@@ -431,5 +437,21 @@ class ScanditDataCaptureLabel: AdvancedOverlayContainer {
         
         labelModule.applyModeSettings(modeId: modeId, modeSettingsJson: settingsJson,
                                       result: .create(resolve, reject))
+    }
+    
+    @objc(updateLabelCaptureFeedback:resolve:reject:)
+    func updateLabelCaptureFeedback(_ data: [String: Any],
+                                    resolve: @escaping RCTPromiseResolveBlock,
+                                    reject: @escaping RCTPromiseRejectBlock) {
+        guard let feedbackJson = data["feedbackJson"] as? String else {
+            reject("error", "Feedback JSON is missing or invalid", nil)
+            return
+        }
+        
+        let modeId = data["modeId"] as? Int ?? -1
+        
+        labelModule.updateFeedback(modeId: modeId,
+                                   feedbackJson: feedbackJson,
+                                   result: .create(resolve, reject))
     }
 }
