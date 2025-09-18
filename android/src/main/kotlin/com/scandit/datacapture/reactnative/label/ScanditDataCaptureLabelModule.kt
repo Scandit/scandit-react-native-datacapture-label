@@ -21,7 +21,7 @@ import com.scandit.datacapture.reactnative.core.utils.ReactNativeResult
 import com.scandit.datacapture.reactnative.core.utils.modeId
 
 class ScanditDataCaptureLabelModule(
-    reactContext: ReactApplicationContext,
+    private val reactContext: ReactApplicationContext,
     private val labelCaptureModule: LabelCaptureModule,
 ) : ReactContextBaseJavaModule(reactContext) {
 
@@ -122,7 +122,7 @@ class ScanditDataCaptureLabelModule(
             labelId,
             object : ViewFromJsonResolver {
                 override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
+                    return reactContext.currentActivity?.let {
                         nativeViewFromJson(it, viewJson)
                     }
                 }
@@ -140,7 +140,7 @@ class ScanditDataCaptureLabelModule(
             readableMap.toHashMap(),
             object : ViewFromJsonResolver {
                 override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
+                    return reactContext.currentActivity?.let {
                         nativeViewFromJson(it, viewJson)
                     }
                 }

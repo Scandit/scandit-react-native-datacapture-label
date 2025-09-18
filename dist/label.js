@@ -681,6 +681,25 @@ var LabelCaptureAdvancedOverlayListenerEvents;
 class LabelCaptureAdvancedOverlayController extends BaseController {
     constructor(overlay) {
         super('LabelCaptureAdvancedOverlayProxy');
+        this.hasListeners = false;
+        this.handleViewForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleViewForLabel(ev);
+        });
+        this.handleAnchorForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleAnchorForLabel(ev);
+        });
+        this.handleOffsetForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleOffsetForLabel(ev);
+        });
+        this.handleViewForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleViewForCapturedLabelField(ev);
+        });
+        this.handleAnchorForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleAnchorForCapturedLabelField(ev);
+        });
+        this.handleOffsetForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleOffsetForCapturedLabelField(ev);
+        });
         this.overlay = overlay;
         this.initialize();
     }
@@ -747,14 +766,18 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
         return this._proxy.$clearCapturedLabelViews({ dataCaptureViewId: this.dataCaptureViewId });
     }
     subscribeListener() {
+        if (this.hasListeners) {
+            return;
+        }
         this._proxy.$registerListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
         this._proxy.subscribeForEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelField.bind(this));
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabelWrapper);
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabelWrapper);
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabelWrapper);
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelFieldWrapper);
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelFieldWrapper);
+        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelFieldWrapper);
+        this.hasListeners = true;
     }
     handleViewForLabel(ev) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -823,14 +846,18 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
         });
     }
     unsubscribeListener() {
+        if (!this.hasListeners) {
+            return;
+        }
         this._proxy.$unregisterListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
         this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelField.bind(this));
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabelWrapper);
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabelWrapper);
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabelWrapper);
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelFieldWrapper);
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelFieldWrapper);
+        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelFieldWrapper);
+        this.hasListeners = false;
     }
     dispose() {
         this.unsubscribeListener();
@@ -872,8 +899,15 @@ class LabelCaptureAdvancedOverlay extends DefaultSerializeable {
         return this._listener;
     }
     set listener(listener) {
+        var _a, _b;
         this._listener = listener;
         this.hasListener = listener != null;
+        if (listener) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeListener();
+        }
+        else {
+            (_b = this.controller) === null || _b === void 0 ? void 0 : _b.unsubscribeListener();
+        }
     }
     /**
      * @deprecated Since 7.6. This factory will be removed in 8.0.
@@ -1346,6 +1380,16 @@ var LabelCaptureBasicOverlayListenerEvents;
 class LabelCaptureBasicOverlayController extends BaseController {
     constructor(overlay) {
         super('LabelCaptureBasicOverlayProxy');
+        this.hasListeners = false;
+        this.handleBrushForFieldOfLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleBrushForFieldOfLabel(ev);
+        });
+        this.handleBrushForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleBrushForLabel(ev);
+        });
+        this.handleDidTapLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleDidTapLabel(ev);
+        });
         this.overlay = overlay;
         this.initialize();
     }
@@ -1371,11 +1415,15 @@ class LabelCaptureBasicOverlayController extends BaseController {
     }
     subscribeListener() {
         return __awaiter(this, void 0, void 0, function* () {
+            if (this.hasListeners) {
+                return;
+            }
             yield this._proxy.$registerListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
             this._proxy.subscribeForEvents(Object.values(LabelCaptureBasicOverlayListenerEvents));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabel.bind(this));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabel.bind(this));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabel.bind(this));
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabelWrapper);
+            this.hasListeners = true;
         });
     }
     handleBrushForFieldOfLabel(ev) {
@@ -1412,11 +1460,15 @@ class LabelCaptureBasicOverlayController extends BaseController {
     }
     unsubscribeListener() {
         return __awaiter(this, void 0, void 0, function* () {
+            if (!this.hasListeners) {
+                return;
+            }
             this._proxy.$unregisterListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
             this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureBasicOverlayListenerEvents));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabel.bind(this));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabel.bind(this));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabel.bind(this));
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabelWrapper);
+            this.hasListeners = false;
         });
     }
     updateBasicOverlay(basicOverlayJson) {
@@ -1487,8 +1539,15 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
         return this._listener;
     }
     set listener(listener) {
+        var _a, _b;
         this._listener = listener;
-        this.hasListener = listener != null;
+        this.hasListener = listener !== null;
+        if (this.hasListener) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeListener();
+        }
+        else {
+            (_b = this.controller) === null || _b === void 0 ? void 0 : _b.unsubscribeListener();
+        }
     }
     get shouldShowScanAreaGuides() {
         return this._shouldShowScanAreaGuides;
@@ -1588,7 +1647,10 @@ var LabelCaptureValidationFlowListenerEvents;
 class LabelCaptureValidationFlowOverlayController extends BaseController {
     constructor(overlay) {
         super('LabelCaptureValidationFlowOverlayProxy');
-        this.isSubscribed = false;
+        this.hasListeners = false;
+        this.handleDidCaptureLabelWithFieldsEventWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleDidCaptureLabelWithFieldsEvent(ev);
+        });
         this.overlay = overlay;
         this.initialize();
     }
@@ -1603,22 +1665,22 @@ class LabelCaptureValidationFlowOverlayController extends BaseController {
         });
     }
     subscribeLabelCaptureValidationFlowListener() {
-        if (this.isSubscribed) {
+        if (this.hasListeners) {
             return;
         }
         this._proxy.$registerListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
         this._proxy.subscribeForEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
-        this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEvent.bind(this));
-        this.isSubscribed = true;
+        this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEventWrapper);
+        this.hasListeners = true;
     }
     unsubscribeLabelCaptureValidationFlowListener() {
-        if (!this.isSubscribed) {
+        if (!this.hasListeners) {
             return;
         }
         this._proxy.$unregisterListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
-        this._proxy.eventEmitter.off(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEvent.bind(this));
+        this._proxy.eventEmitter.off(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEventWrapper);
         this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
-        this.isSubscribed = false;
+        this.hasListeners = false;
     }
     handleDidCaptureLabelWithFieldsEvent(ev) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1676,18 +1738,14 @@ class LabelCaptureValidationFlowOverlay extends DefaultSerializeable {
     }
     set listener(listener) {
         var _a, _b;
-        this.hasListener = listener != null;
-        if (this.view == null) {
-            this._listener = listener;
-            return;
-        }
-        if (listener == null) {
-            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.unsubscribeLabelCaptureValidationFlowListener();
-        }
-        else if (this.listener == null) {
-            (_b = this.controller) === null || _b === void 0 ? void 0 : _b.subscribeLabelCaptureValidationFlowListener();
-        }
         this._listener = listener;
+        this.hasListener = listener !== null;
+        if (this.hasListener) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeLabelCaptureValidationFlowListener();
+        }
+        else {
+            (_b = this.controller) === null || _b === void 0 ? void 0 : _b.unsubscribeLabelCaptureValidationFlowListener();
+        }
     }
     applySettings(settings) {
         var _a, _b;
