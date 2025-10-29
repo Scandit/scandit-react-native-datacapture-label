@@ -624,18 +624,26 @@ class LabelCapture extends DefaultSerializeable {
         });
     }
     addListener(listener) {
+        var _a;
         if (this.listeners.includes(listener)) {
             return;
         }
+        if (this.listeners.length === 0) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeLabelCaptureListener();
+            this.hasListeners = true;
+        }
         this.listeners.push(listener);
-        this.hasListeners = this.listeners.length > 0;
     }
     removeListener(listener) {
+        var _a;
         if (!this.listeners.includes(listener)) {
             return;
         }
         this.listeners.splice(this.listeners.indexOf(listener), 1);
-        this.hasListeners = this.listeners.length > 0;
+        if (this.listeners.length === 0) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.unsubscribeLabelCaptureListener();
+            this.hasListeners = false;
+        }
     }
     get feedback() {
         return this._feedback;
