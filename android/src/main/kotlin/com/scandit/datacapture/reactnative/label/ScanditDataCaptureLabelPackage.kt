@@ -29,7 +29,7 @@ class ScanditDataCaptureLabelPackage : ReactPackage {
 
     private fun getLabelCaptureModule(reactContext: ReactApplicationContext): LabelCaptureModule {
         val emitter = ReactNativeEventEmitter(reactContext)
-        return LabelCaptureModule(emitter).also {
+        return LabelCaptureModule.create(emitter).also {
             it.onCreate(reactContext)
         }
     }
