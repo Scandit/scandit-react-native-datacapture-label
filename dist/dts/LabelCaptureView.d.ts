@@ -1,6 +1,6 @@
 import React from 'react';
 import { Brush, CameraPosition, CameraSettings, DataCaptureContext, FrameSourceState, TorchState, TorchSwitchControl, ZoomSwitchControl, Viewfinder, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
-import { LabelCapture, LabelCaptureBasicOverlay, LabelCaptureSettings, CapturedLabel, LabelCaptureSession, LabelField, LabelCaptureAdvancedOverlay } from 'scandit-datacapture-frameworks-label';
+import { LabelCapture, LabelCaptureBasicOverlay, LabelCaptureSettings, CapturedLabel, LabelCaptureSession, LabelField, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowSettings } from 'scandit-datacapture-frameworks-label';
 import { LabelCaptureAdvancedOverlayView } from './LabelCaptureAdvancedOverlayView';
 interface LabelCaptureViewProps {
     context: DataCaptureContext;
@@ -18,6 +18,8 @@ interface LabelCaptureViewProps {
     desiredTorchState?: TorchState | null;
     torchSwitchControl?: TorchSwitchControl | null;
     zoomSwitchControl?: ZoomSwitchControl | null;
+    useValidationFlow: boolean;
+    validationFlowSettings?: LabelCaptureValidationFlowSettings | null;
     style: any;
     navigation?: any;
     didUpdateSession?(labelCapture: LabelCapture, session: LabelCaptureSession): void;
@@ -30,6 +32,7 @@ interface LabelCaptureViewProps {
     brushForFieldOfLabel?(overlay: LabelCaptureBasicOverlay, field: LabelField, label: CapturedLabel): Brush | null;
     brushForLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): Brush | null;
     didTapLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): void;
+    didCaptureLabelWithFields?(fields: LabelField[]): void;
 }
 export declare const LabelCaptureView: React.ForwardRefExoticComponent<LabelCaptureViewProps & React.RefAttributes<unknown>>;
 export {};
