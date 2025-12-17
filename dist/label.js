@@ -1,4 +1,4 @@
-import { nameForSerialization, ignoreFromSerializationIfNull, serializationDefault, NoViewfinder, FactoryMaker, CameraSettings, Brush, DefaultSerializeable, ignoreFromSerialization, Quadrilateral, BaseController, Rect, Point, Size, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core/dist/core';
+import { nameForSerialization, ignoreFromSerializationIfNull, serializationDefault, NoViewfinder, FactoryMaker, CameraSettings, Brush, Feedback, DefaultSerializeable, ignoreFromSerialization, Quadrilateral, BaseController, Rect, Point, Size, registerProxies, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core/dist/core';
 import { Barcode, getBarcodeDefaults } from 'scandit-react-native-datacapture-barcode/dist/barcode';
 
 function loadLabelCaptureDefaults(jsonDefaults) {
@@ -27,6 +27,9 @@ function parseLabelCaptureDefaults(jsonDefaults) {
                     requiredFieldErrorText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.requiredFieldErrorText,
                     manualInputButtonText: jsonDefaults.LabelCapture.LabelCaptureValidationFlowOverlay.Settings.manualInputButtonText,
                 }
+            },
+            Feedback: {
+                success: Feedback.fromJSON(JSON.parse(jsonDefaults.LabelCapture.feedback).success),
             },
         },
     };
@@ -75,11 +78,11 @@ class LabelFieldDefinition extends DefaultSerializeable {
     get name() {
         return this._name;
     }
-    get patterns() {
-        return this._patterns;
+    get valueRegexes() {
+        return this._valueRegexes;
     }
-    set patterns(value) {
-        this._patterns = value;
+    set valueRegexes(value) {
+        this._valueRegexes = value;
     }
     get optional() {
         return this._optional;
@@ -106,7 +109,7 @@ class LabelFieldDefinition extends DefaultSerializeable {
     }
     constructor(name) {
         super();
-        this._patterns = [];
+        this._valueRegexes = [];
         this._optional = false;
         this._hiddenProperties = {};
         this._name = name;
@@ -117,7 +120,7 @@ __decorate([
 ], LabelFieldDefinition.prototype, "_name", void 0);
 __decorate([
     nameForSerialization('patterns')
-], LabelFieldDefinition.prototype, "_patterns", void 0);
+], LabelFieldDefinition.prototype, "_valueRegexes", void 0);
 __decorate([
     nameForSerialization('optional')
 ], LabelFieldDefinition.prototype, "_optional", void 0);
@@ -147,6 +150,9 @@ __decorate([
 ], BarcodeField.prototype, "_symbologySettings", void 0);
 
 class LabelDateResult extends DefaultSerializeable {
+    static fromJSON(json) {
+        return new LabelDateResult(json.day, json.month, json.year, json.dayStr, json.monthStr, json.yearStr);
+    }
     constructor(day, month, year, dayString, monthString, yearString) {
         super();
         this._day = day;
@@ -177,9 +183,6 @@ class LabelDateResult extends DefaultSerializeable {
         var _a;
         return (_a = this._yearString) !== null && _a !== void 0 ? _a : '';
     }
-    static fromJSON(json) {
-        return new LabelDateResult(json.day, json.month, json.year, json.dayStr, json.monthStr, json.yearStr);
-    }
 }
 __decorate([
     nameForSerialization('day')
@@ -201,6 +204,18 @@ __decorate([
 ], LabelDateResult.prototype, "_yearString", void 0);
 
 class LabelField {
+    static fromJSON(json) {
+        const field = new LabelField();
+        field._name = json.name;
+        field._type = json.type;
+        field._predictedLocation = Quadrilateral.fromJSON(json.location);
+        field._state = json.state;
+        field._isRequired = json.isRequired;
+        field._barcode = json.barcode ? Barcode['fromJSON'](json.barcode) : null;
+        field._text = json.text;
+        field._dateResult = json.date ? LabelDateResult.fromJSON(json.date) : null;
+        return field;
+    }
     get name() {
         return this._name;
     }
@@ -224,18 +239,6 @@ class LabelField {
     }
     asDate() {
         return this._dateResult;
-    }
-    static fromJSON(json) {
-        const field = new LabelField();
-        field._name = json.name;
-        field._type = json.type;
-        field._predictedLocation = Quadrilateral.fromJSON(json.location);
-        field._state = json.state;
-        field._isRequired = json.isRequired;
-        field._barcode = json.barcode ? Barcode.fromJSON(json.barcode) : null;
-        field._text = json.text;
-        field._dateResult = json.date ? LabelDateResult.fromJSON(json.date) : null;
-        return field;
     }
 }
 
@@ -288,15 +291,15 @@ class CustomBarcode extends BarcodeField {
     constructor(name, symbologies) {
         super(name, symbologies);
         this.location = null;
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
         this._fieldType = 'customBarcode';
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
     static get barcodeDefaults() {
         return getBarcodeDefaults();
@@ -307,7 +310,7 @@ __decorate([
 ], CustomBarcode.prototype, "location", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], CustomBarcode.prototype, "_dataTypePatterns", void 0);
+], CustomBarcode.prototype, "_anchorRegexes", void 0);
 __decorate([
     nameForSerialization('fieldType')
 ], CustomBarcode.prototype, "_fieldType", void 0);
@@ -319,15 +322,15 @@ class CustomText extends TextField {
     constructor(name) {
         super(name);
         this.location = null;
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
         this._fieldType = 'customText';
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
 }
 __decorate([
@@ -335,7 +338,7 @@ __decorate([
 ], CustomText.prototype, "location", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], CustomText.prototype, "_dataTypePatterns", void 0);
+], CustomText.prototype, "_anchorRegexes", void 0);
 __decorate([
     nameForSerialization('fieldType')
 ], CustomText.prototype, "_fieldType", void 0);
@@ -344,7 +347,7 @@ class ExpiryDateText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'expiryDateText';
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
         this._labelDateFormat = null;
     }
     get labelDateFormat() {
@@ -353,12 +356,12 @@ class ExpiryDateText extends TextField {
     set labelDateFormat(value) {
         this._labelDateFormat = value;
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
 }
 __decorate([
@@ -366,7 +369,7 @@ __decorate([
 ], ExpiryDateText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], ExpiryDateText.prototype, "_dataTypePatterns", void 0);
+], ExpiryDateText.prototype, "_anchorRegexes", void 0);
 __decorate([
     nameForSerialization('labelDateFormat')
 ], ExpiryDateText.prototype, "_labelDateFormat", void 0);
@@ -451,18 +454,47 @@ class LabelCaptureController extends BaseController {
     constructor(mode) {
         super('LabelCaptureProxy');
         this.mode = mode;
+        this.initialize().catch(error => console.error('Failed to initialize LabelCaptureController:', error));
     }
     setModeEnabledState(isEnabled) {
-        return this._proxy.$setModeEnabledState({ modeId: this.mode.modeId, isEnabled });
+        return this._proxy.$setModeEnabledState({ modeId: this.modeId, isEnabled });
     }
     updateLabelCaptureSettings(settingsJson) {
-        return this._proxy.$updateLabelCaptureSettings({ modeId: this.mode.modeId, settingsJson });
+        return this._proxy.$updateLabelCaptureSettings({ modeId: this.modeId, settingsJson });
     }
     subscribeLabelCaptureListener() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._proxy.$registerListenerForEvents({ modeId: this.mode.modeId });
+            if (this._boundHandleDidUpdateSession) {
+                return;
+            }
+            yield this._proxy.$registerListenerForEvents({ modeId: this.modeId });
+            this._boundHandleDidUpdateSession = this.handleDidUpdateSessionEvent.bind(this);
             this._proxy.subscribeForEvents(Object.values(LabelCaptureListenerEvents));
-            this._proxy.eventEmitter.on(LabelCaptureListenerEvents.didUpdateSession, this.handleDidUpdateSessionEvent.bind(this));
+            this._proxy.eventEmitter.on(LabelCaptureListenerEvents.didUpdateSession, this._boundHandleDidUpdateSession);
+        });
+    }
+    unsubscribeLabelCaptureListener() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._proxy.$unregisterListenerForEvents({ modeId: this.modeId });
+            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureListenerEvents));
+            if (this._boundHandleDidUpdateSession) {
+                this._proxy.eventEmitter.off(LabelCaptureListenerEvents.didUpdateSession, this._boundHandleDidUpdateSession);
+                this._boundHandleDidUpdateSession = undefined;
+            }
+        });
+    }
+    updateFeedback(feedback) {
+        return this._proxy.$updateLabelCaptureFeedback({ modeId: this.modeId, feedbackJson: JSON.stringify(feedback.toJSON()) });
+    }
+    dispose() {
+        void this.unsubscribeLabelCaptureListener();
+        this._proxy.dispose();
+    }
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.mode.listeners.length > 0) {
+                yield this.subscribeLabelCaptureListener();
+            }
         });
     }
     handleDidUpdateSessionEvent(ev) {
@@ -470,15 +502,11 @@ class LabelCaptureController extends BaseController {
             const payload = JSON.parse(ev.data);
             const session = LabelCaptureSession.fromJSON(JSON.parse(payload.session));
             this.notifyListenersOfDidUpdateSession(session);
-            yield this._proxy.$finishDidUpdateSessionCallback({ isEnabled: this.mode.isEnabled });
+            yield this._proxy.$finishDidUpdateSessionCallback({ modeId: this.modeId, isEnabled: this.mode.isEnabled });
         });
     }
-    unsubscribeLabelCaptureListener() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._proxy.$unregisterListenerForEvents({ modeId: this.mode.modeId });
-            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureListenerEvents));
-            this._proxy.eventEmitter.off(LabelCaptureListenerEvents.didUpdateSession, this.handleDidUpdateSessionEvent.bind(this));
-        });
+    get modeId() {
+        return this.mode.modeId;
     }
     notifyListenersOfDidUpdateSession(session) {
         const mode = this.mode;
@@ -490,78 +518,141 @@ class LabelCaptureController extends BaseController {
     }
 }
 
+class LabelCaptureFeedback extends DefaultSerializeable {
+    static get defaultFeedback() {
+        return new LabelCaptureFeedback();
+    }
+    static get labelCaptureDefaults() {
+        return getLabelCaptureDefaults();
+    }
+    get success() {
+        return this._success;
+    }
+    set success(success) {
+        this._success = success;
+        void this.updateFeedback();
+    }
+    constructor() {
+        super();
+        this.controller = null;
+        this._success = LabelCaptureFeedback.labelCaptureDefaults.LabelCapture.Feedback.success;
+    }
+    updateFeedback() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateFeedback(this);
+        });
+    }
+}
+__decorate([
+    nameForSerialization('success')
+], LabelCaptureFeedback.prototype, "_success", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelCaptureFeedback.prototype, "controller", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelCaptureFeedback, "labelCaptureDefaults", null);
+
 class LabelCapture extends DefaultSerializeable {
+    static createRecommendedCameraSettings() {
+        return new CameraSettings(getLabelCaptureDefaults().LabelCapture.RecommendedCameraSettings);
+    }
     get isEnabled() {
         return this._isEnabled;
     }
     set isEnabled(isEnabled) {
+        var _a;
         this._isEnabled = isEnabled;
-        this.controller.setModeEnabledState(isEnabled);
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.setModeEnabledState(isEnabled));
     }
     get context() {
         return this._context;
-    }
-    static get recommendedCameraSettings() {
-        return getLabelCaptureDefaults().LabelCapture.RecommendedCameraSettings;
     }
     get _context() {
         return this.privateContext;
     }
     set _context(newContext) {
+        var _a, _b;
         if (newContext == null) {
-            this.controller.unsubscribeLabelCaptureListener();
-        }
-        else if (this.privateContext == null) {
-            this.controller.subscribeLabelCaptureListener();
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.dispose();
+            this.controller = null;
+            this._feedback.controller = null;
+            return;
         }
         this.privateContext = newContext;
+        (_b = this.controller) !== null && _b !== void 0 ? _b : (this.controller = new LabelCaptureController(this));
+        this._feedback.controller = this.controller;
     }
-    static forContext(context, settings) {
-        const mode = new LabelCapture();
-        mode.settings = settings;
-        if (context) {
-            context.addMode(mode);
-        }
-        return mode;
-    }
-    constructor() {
+    constructor(settings) {
         super();
+        this.listeners = [];
         this.type = 'labelCapture';
-        this.modeId = Math.floor(Math.random() * 1000000);
+        this.modeId = Math.floor(Math.random() * 100000000);
+        this.parentId = null;
         this._isEnabled = true;
+        this._feedback = LabelCaptureFeedback.defaultFeedback;
         this.hasListeners = false;
         this.privateContext = null;
-        this.listeners = [];
-        this.controller = new LabelCaptureController(this);
+        this.controller = null;
+        this.settings = settings;
     }
     applySettings(settings) {
-        this.settings = settings;
-        return this.controller.updateLabelCaptureSettings(JSON.stringify(settings.toJSON()));
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            this.settings = settings;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateLabelCaptureSettings(JSON.stringify(settings.toJSON()));
+        });
     }
     addListener(listener) {
+        var _a;
         if (this.listeners.includes(listener)) {
             return;
         }
+        if (this.listeners.length === 0) {
+            void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeLabelCaptureListener());
+            this.hasListeners = true;
+        }
         this.listeners.push(listener);
-        this.hasListeners = this.listeners.length > 0;
     }
     removeListener(listener) {
+        var _a;
         if (!this.listeners.includes(listener)) {
             return;
         }
         this.listeners.splice(this.listeners.indexOf(listener), 1);
-        this.hasListeners = this.listeners.length > 0;
+        if (this.listeners.length === 0) {
+            void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.unsubscribeLabelCaptureListener());
+            this.hasListeners = false;
+        }
+    }
+    get feedback() {
+        return this._feedback;
+    }
+    set feedback(feedback) {
+        var _a;
+        this._feedback.controller = null;
+        this._feedback = feedback;
+        this._feedback.controller = this.controller;
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateFeedback(feedback));
     }
 }
+__decorate([
+    ignoreFromSerialization
+], LabelCapture.prototype, "listeners", void 0);
+__decorate([
+    nameForSerialization('parentId'),
+    ignoreFromSerializationIfNull
+], LabelCapture.prototype, "parentId", void 0);
 __decorate([
     nameForSerialization('enabled')
 ], LabelCapture.prototype, "_isEnabled", void 0);
 __decorate([
-    ignoreFromSerialization
-], LabelCapture.prototype, "privateContext", void 0);
+    nameForSerialization('feedback')
+], LabelCapture.prototype, "_feedback", void 0);
 __decorate([
     ignoreFromSerialization
-], LabelCapture.prototype, "listeners", void 0);
+], LabelCapture.prototype, "privateContext", void 0);
 __decorate([
     ignoreFromSerialization
 ], LabelCapture.prototype, "controller", void 0);
@@ -576,19 +667,38 @@ var LabelCaptureAdvancedOverlayListenerEvents;
     LabelCaptureAdvancedOverlayListenerEvents["offsetForCapturedLabelField"] = "LabelCaptureAdvancedOverlayListener.offsetForFieldOfLabel";
 })(LabelCaptureAdvancedOverlayListenerEvents || (LabelCaptureAdvancedOverlayListenerEvents = {}));
 class LabelCaptureAdvancedOverlayController extends BaseController {
-    constructor() {
+    constructor(overlay) {
         super('LabelCaptureAdvancedOverlayProxy');
-    }
-    static forOverlay(overlay) {
-        const proxy = new LabelCaptureAdvancedOverlayController();
-        proxy.overlay = overlay;
-        return proxy;
+        // Arrow function wrappers to avoid .bind(this) and always use current class state
+        this.handleViewForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleViewForLabel(ev);
+        });
+        this.handleAnchorForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleAnchorForLabel(ev);
+        });
+        this.handleOffsetForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleOffsetForLabel(ev);
+        });
+        this.handleViewForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleViewForCapturedLabelField(ev);
+        });
+        this.handleAnchorForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleAnchorForCapturedLabelField(ev);
+        });
+        this.handleOffsetForCapturedLabelFieldWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleOffsetForCapturedLabelField(ev);
+        });
+        this.overlay = overlay;
+        void this.initialize();
     }
     setViewForCapturedLabel(label, view) {
-        return this._proxy.$setViewForCapturedLabel({
-            jsonView: view ? JSON.stringify(view.toJSON()) : null,
-            trackingId: label.trackingID,
-            dataCaptureViewId: this.dataCaptureViewId
+        return __awaiter(this, void 0, void 0, function* () {
+            const awitedView = yield view;
+            return this._proxy.$setViewForCapturedLabel({
+                jsonView: awitedView ? JSON.stringify(awitedView.toJSON()) : null,
+                trackingId: label.trackingID,
+                dataCaptureViewId: this.dataCaptureViewId
+            });
         });
     }
     setAnchorForCapturedLabel(label, anchor) {
@@ -609,16 +719,66 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
         const identifier = `${label.trackingID}§${field.name}`;
         return this.setViewForCapturedLabelFieldPrivate(identifier, view);
     }
-    setViewForCapturedLabelFieldPrivate(identifier, view) {
-        return this._proxy.$setViewForCapturedLabelField({
-            view: view ? JSON.stringify(view.toJSON()) : null,
-            identifier: identifier,
-            dataCaptureViewId: this.dataCaptureViewId
-        });
-    }
     setAnchorForCapturedLabelField(label, field, anchor) {
         const identifier = `${label.trackingID}§${field.name}`;
         return this.setAnchorForCapturedLabelFieldPrivate(identifier, anchor);
+    }
+    setOffsetForCapturedLabelField(label, field, offset) {
+        const identifier = `${label.trackingID}§${field.name}`;
+        return this.setOffsetForCapturedLabelFieldPrivate(identifier, offset);
+    }
+    clearCapturedLabelViews() {
+        return this._proxy.$clearCapturedLabelViews({ dataCaptureViewId: this.dataCaptureViewId });
+    }
+    subscribeListener() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.dataCaptureViewId !== -1) {
+                yield this._proxy.$registerListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            }
+            this._proxy.subscribeForEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelFieldWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelFieldWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelFieldWrapper);
+        });
+    }
+    unsubscribeListener() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._proxy.$unregisterListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelFieldWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelFieldWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelFieldWrapper);
+        });
+    }
+    dispose() {
+        void this.unsubscribeListener();
+        this._proxy.dispose();
+    }
+    updateAdvancedOverlay(advancedOverlayJson) {
+        return this._proxy.$updateLabelCaptureAdvancedOverlay({ dataCaptureViewId: this.dataCaptureViewId, advancedOverlayJson });
+    }
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.overlay.listener) {
+                return this.subscribeListener();
+            }
+        });
+    }
+    setViewForCapturedLabelFieldPrivate(identifier, view) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const awitedView = yield view;
+            return this._proxy.$setViewForCapturedLabelField({
+                view: awitedView ? JSON.stringify(awitedView.toJSON()) : null,
+                identifier: identifier,
+                dataCaptureViewId: this.dataCaptureViewId
+            });
+        });
     }
     setAnchorForCapturedLabelFieldPrivate(identifier, anchor) {
         return this._proxy.$setAnchorForCapturedLabelField({
@@ -627,29 +787,12 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             dataCaptureViewId: this.dataCaptureViewId
         });
     }
-    setOffsetForCapturedLabelField(label, field, offset) {
-        const identifier = `${label.trackingID}§${field.name}`;
-        return this.setOffsetForCapturedLabelFieldPrivate(identifier, offset);
-    }
     setOffsetForCapturedLabelFieldPrivate(identifier, offset) {
         return this._proxy.$setOffsetForCapturedLabelField({
             offset: JSON.stringify(offset.toJSON()),
             identifier: identifier,
             dataCaptureViewId: this.dataCaptureViewId
         });
-    }
-    clearCapturedLabelViews() {
-        return this._proxy.$clearCapturedLabelViews({ dataCaptureViewId: this.dataCaptureViewId });
-    }
-    subscribeListener() {
-        this._proxy.$registerListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
-        this._proxy.subscribeForEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabel.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.on(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelField.bind(this));
     }
     handleViewForLabel(ev) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -717,23 +860,6 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
             yield this.setOffsetForCapturedLabelFieldPrivate(payload.identifier, offset);
         });
     }
-    unsubscribeListener() {
-        this._proxy.$unregisterListenerForAdvancedOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
-        this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureAdvancedOverlayListenerEvents));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForLabel, this.handleViewForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForLabel, this.handleAnchorForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForLabel, this.handleOffsetForLabel.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.viewForCapturedLabelField, this.handleViewForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.anchorForCapturedLabelField, this.handleAnchorForCapturedLabelField.bind(this));
-        this._proxy.eventEmitter.off(LabelCaptureAdvancedOverlayListenerEvents.offsetForCapturedLabelField, this.handleOffsetForCapturedLabelField.bind(this));
-    }
-    dispose() {
-        this.unsubscribeListener();
-        this._proxy.dispose();
-    }
-    updateAdvancedOverlay(advancedOverlayJson) {
-        return this._proxy.$updateLabelCaptureAdvancedOverlay({ dataCaptureViewId: this.dataCaptureViewId, advancedOverlayJson });
-    }
     get dataCaptureViewId() {
         var _a, _b;
         return (_b = (_a = this.overlay.view) === null || _a === void 0 ? void 0 : _a.viewId) !== null && _b !== void 0 ? _b : -1;
@@ -741,76 +867,98 @@ class LabelCaptureAdvancedOverlayController extends BaseController {
 }
 
 class LabelCaptureAdvancedOverlay extends DefaultSerializeable {
-    set view(newView) {
-        if (newView == null) {
-            this.proxy.unsubscribeListener();
-        }
-        else if (this._view == null) {
-            this.proxy.subscribeListener();
-        }
-        this._view = newView;
-    }
     get view() {
         return this._view;
+    }
+    set view(newView) {
+        var _a, _b;
+        if (newView === null) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.dispose();
+            this.controller = null;
+            this._view = null;
+            return;
+        }
+        this._view = newView;
+        (_b = this.controller) !== null && _b !== void 0 ? _b : (this.controller = new LabelCaptureAdvancedOverlayController(this));
     }
     get shouldShowScanAreaGuides() {
         return this._shouldShowScanAreaGuides;
     }
     set shouldShowScanAreaGuides(shouldShow) {
+        var _a;
         this._shouldShowScanAreaGuides = shouldShow;
-        this.proxy.updateAdvancedOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateAdvancedOverlay(JSON.stringify(this.toJSON())));
     }
     get listener() {
         return this._listener;
     }
     set listener(listener) {
+        var _a, _b;
         this._listener = listener;
         this.hasListener = listener != null;
-    }
-    static withLabelCaptureForView(labelCapture, view) {
-        const overlay = new LabelCaptureAdvancedOverlay();
-        overlay.mode = labelCapture;
-        if (view) {
-            view.addOverlay(overlay);
+        if (this.hasListener) {
+            void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeListener());
         }
-        return overlay;
+        else {
+            void ((_b = this.controller) === null || _b === void 0 ? void 0 : _b.unsubscribeListener());
+        }
     }
-    constructor() {
+    constructor(mode) {
         super();
         this.type = 'labelCaptureAdvanced';
+        this.controller = null;
+        this._view = null;
         this._listener = null;
         this.hasListener = false;
         this._shouldShowScanAreaGuides = false;
-        this.proxy = LabelCaptureAdvancedOverlayController.forOverlay(this);
+        this.modeId = mode.modeId;
     }
     setViewForCapturedLabel(capturedLabel, view) {
-        return this.proxy.setViewForCapturedLabel(capturedLabel, view);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setViewForCapturedLabel(capturedLabel, view);
+        });
     }
     setViewForCapturedLabelField(field, capturedLabel, view) {
-        return this.proxy.setViewForCapturedLabelField(capturedLabel, field, view);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setViewForCapturedLabelField(capturedLabel, field, view);
+        });
     }
     setAnchorForCapturedLabel(capturedLabel, anchor) {
-        return this.proxy.setAnchorForCapturedLabel(capturedLabel, anchor);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setAnchorForCapturedLabel(capturedLabel, anchor);
+        });
     }
     setAnchorForCapturedLabelField(field, capturedLabel, anchor) {
-        return this.proxy.setAnchorForCapturedLabelField(capturedLabel, field, anchor);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setAnchorForCapturedLabelField(capturedLabel, field, anchor);
+        });
     }
     setOffsetForCapturedLabel(capturedLabel, offset) {
-        return this.proxy.setOffsetForCapturedLabel(capturedLabel, offset);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setOffsetForCapturedLabel(capturedLabel, offset);
+        });
     }
     setOffsetForCapturedLabelField(field, capturedLabel, offset) {
-        return this.proxy.setOffsetForCapturedLabelField(capturedLabel, field, offset);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setOffsetForCapturedLabelField(capturedLabel, field, offset);
+        });
     }
     clearCapturedLabelViews() {
-        return this.proxy.clearCapturedLabelViews();
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.clearCapturedLabelViews();
+        });
     }
 }
 __decorate([
     ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "proxy", void 0);
-__decorate([
-    ignoreFromSerialization
-], LabelCaptureAdvancedOverlay.prototype, "mode", void 0);
+], LabelCaptureAdvancedOverlay.prototype, "controller", void 0);
 __decorate([
     ignoreFromSerialization
 ], LabelCaptureAdvancedOverlay.prototype, "_view", void 0);
@@ -914,12 +1062,6 @@ class LabelDefinition extends DefaultSerializeable {
         }
         this._hiddenProperties = newValue;
     }
-    static fromJSON(json) {
-        const definition = new LabelDefinition(json.name);
-        definition._fields = json.fields;
-        definition.hiddenProperties = json.hidden_properties;
-        return definition;
-    }
     static createVinLabelDefinition(name) {
         const definition = new LabelDefinition(name);
         definition._type = 'vin';
@@ -933,6 +1075,12 @@ class LabelDefinition extends DefaultSerializeable {
     static createSevenSegmentDisplayLabelDefinition(name) {
         const definition = new LabelDefinition(name);
         definition._type = 'sevenSegment';
+        return definition;
+    }
+    static fromJSON(json) {
+        const definition = new LabelDefinition(json.name);
+        definition._fields = json.fields;
+        definition.hiddenProperties = json.hidden_properties;
         return definition;
     }
     constructor(name) {
@@ -1065,12 +1213,12 @@ class PackingDateText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'packingDateText';
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
         this._labelDateFormat = null;
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
     get labelDateFormat() {
         return this._labelDateFormat;
@@ -1084,7 +1232,7 @@ __decorate([
 ], PackingDateText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], PackingDateText.prototype, "_dataTypePatterns", void 0);
+], PackingDateText.prototype, "_anchorRegexes", void 0);
 __decorate([
     nameForSerialization('labelDateFormat')
 ], PackingDateText.prototype, "_labelDateFormat", void 0);
@@ -1147,14 +1295,14 @@ class TotalPriceText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'totalPriceText';
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
 }
 __decorate([
@@ -1162,20 +1310,20 @@ __decorate([
 ], TotalPriceText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], TotalPriceText.prototype, "_dataTypePatterns", void 0);
+], TotalPriceText.prototype, "_anchorRegexes", void 0);
 
 class UnitPriceText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'unitPriceText';
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
 }
 __decorate([
@@ -1183,20 +1331,20 @@ __decorate([
 ], UnitPriceText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], UnitPriceText.prototype, "_dataTypePatterns", void 0);
+], UnitPriceText.prototype, "_anchorRegexes", void 0);
 
 class WeightText extends TextField {
     constructor(name) {
         super(name);
         this._fieldType = 'weightText';
-        this._dataTypePatterns = null;
+        this._anchorRegexes = null;
     }
-    get dataTypePatterns() {
+    get anchorRegexes() {
         var _a;
-        return (_a = this._dataTypePatterns) !== null && _a !== void 0 ? _a : [];
+        return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
     }
-    set dataTypePatterns(value) {
-        this._dataTypePatterns = value;
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
 }
 __decorate([
@@ -1204,7 +1352,7 @@ __decorate([
 ], WeightText.prototype, "_fieldType", void 0);
 __decorate([
     nameForSerialization('dataTypePatterns')
-], WeightText.prototype, "_dataTypePatterns", void 0);
+], WeightText.prototype, "_anchorRegexes", void 0);
 
 var LabelCaptureBasicOverlayListenerEvents;
 (function (LabelCaptureBasicOverlayListenerEvents) {
@@ -1213,13 +1361,20 @@ var LabelCaptureBasicOverlayListenerEvents;
     LabelCaptureBasicOverlayListenerEvents["didTapLabel"] = "LabelCaptureBasicOverlayListener.didTapLabel";
 })(LabelCaptureBasicOverlayListenerEvents || (LabelCaptureBasicOverlayListenerEvents = {}));
 class LabelCaptureBasicOverlayController extends BaseController {
-    constructor() {
+    constructor(overlay) {
         super('LabelCaptureBasicOverlayProxy');
-    }
-    static forOverlay(overlay) {
-        const proxy = new LabelCaptureBasicOverlayController();
-        proxy.overlay = overlay;
-        return proxy;
+        // Arrow function wrappers to avoid .bind(this) and always use current class state
+        this.handleBrushForFieldOfLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleBrushForFieldOfLabel(ev);
+        });
+        this.handleBrushForLabelWrapper = (ev) => __awaiter(this, void 0, void 0, function* () {
+            return this.handleBrushForLabel(ev);
+        });
+        this.handleDidTapLabelWrapper = (ev) => {
+            this.handleDidTapLabel(ev);
+        };
+        this.overlay = overlay;
+        void this.initialize();
     }
     setBrushForFieldOfLabel(brush, field, label) {
         return this._proxy.$setBrushForFieldOfLabel({
@@ -1238,11 +1393,36 @@ class LabelCaptureBasicOverlayController extends BaseController {
     }
     subscribeListener() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this._proxy.$registerListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            if (this.dataCaptureViewId !== -1) {
+                yield this._proxy.$registerListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            }
             this._proxy.subscribeForEvents(Object.values(LabelCaptureBasicOverlayListenerEvents));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabel.bind(this));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabel.bind(this));
-            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabel.bind(this));
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabelWrapper);
+            this._proxy.eventEmitter.on(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabelWrapper);
+        });
+    }
+    unsubscribeListener() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this._proxy.$unregisterListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureBasicOverlayListenerEvents));
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabelWrapper);
+            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabelWrapper);
+        });
+    }
+    updateBasicOverlay(basicOverlayJson) {
+        return this._proxy.$updateLabelCaptureBasicOverlay({ dataCaptureViewId: this.dataCaptureViewId, basicOverlayJson });
+    }
+    dispose() {
+        void this.unsubscribeListener();
+        this._proxy.dispose();
+    }
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.overlay.listener) {
+                return this.subscribeListener();
+            }
         });
     }
     handleBrushForFieldOfLabel(ev) {
@@ -1269,25 +1449,11 @@ class LabelCaptureBasicOverlayController extends BaseController {
         });
     }
     handleDidTapLabel(ev) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
-            if (this.overlay.listener && this.overlay.listener.didTapLabel) {
-                const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
-                this.overlay.listener.didTapLabel(this.overlay, label);
-            }
-        });
-    }
-    unsubscribeListener() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._proxy.$unregisterListenerForBasicOverlayEvents({ dataCaptureViewId: this.dataCaptureViewId });
-            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureBasicOverlayListenerEvents));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForFieldOfLabel, this.handleBrushForFieldOfLabel.bind(this));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.brushForLabel, this.handleBrushForLabel.bind(this));
-            this._proxy.eventEmitter.off(LabelCaptureBasicOverlayListenerEvents.didTapLabel, this.handleDidTapLabel.bind(this));
-        });
-    }
-    updateBasicOverlay(basicOverlayJson) {
-        return this._proxy.$updateLabelCaptureBasicOverlay({ dataCaptureViewId: this.dataCaptureViewId, basicOverlayJson });
+        const payload = JSON.parse(ev.data);
+        if (this.overlay.listener && this.overlay.listener.didTapLabel) {
+            const label = CapturedLabel.fromJSON(JSON.parse(payload.label));
+            this.overlay.listener.didTapLabel(this.overlay, label);
+        }
     }
     get dataCaptureViewId() {
         var _a, _b;
@@ -1308,74 +1474,79 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
     static get labelCaptureDefaults() {
         return getLabelCaptureDefaults();
     }
-    set view(newView) {
-        if (newView == null) {
-            this.controller.unsubscribeListener();
-        }
-        else if (this._view == null) {
-            this.controller.subscribeListener();
-        }
-        this._view = newView;
-    }
     get view() {
         return this._view;
+    }
+    set view(newView) {
+        var _a, _b;
+        if (newView === null) {
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.dispose();
+            this.controller = null;
+            this._view = null;
+            return;
+        }
+        this._view = newView;
+        (_b = this.controller) !== null && _b !== void 0 ? _b : (this.controller = new LabelCaptureBasicOverlayController(this));
     }
     get predictedFieldBrush() {
         return this._predictedFieldBrush;
     }
     set predictedFieldBrush(newBrush) {
+        var _a;
         this._predictedFieldBrush = newBrush;
-        this.controller.updateBasicOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateBasicOverlay(JSON.stringify(this.toJSON())));
     }
     get capturedFieldBrush() {
         return this._capturedFieldBrush;
     }
     set capturedFieldBrush(newBrush) {
+        var _a;
         this._capturedFieldBrush = newBrush;
-        this.controller.updateBasicOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateBasicOverlay(JSON.stringify(this.toJSON())));
     }
     get labelBrush() {
         return this._labelBrush;
     }
     set labelBrush(newBrush) {
+        var _a;
         this._labelBrush = newBrush;
-        this.controller.updateBasicOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateBasicOverlay(JSON.stringify(this.toJSON())));
     }
     get listener() {
         return this._listener;
     }
     set listener(listener) {
+        var _a, _b;
         this._listener = listener;
         this.hasListener = listener != null;
+        if (this.hasListener) {
+            void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.subscribeListener());
+        }
+        else {
+            void ((_b = this.controller) === null || _b === void 0 ? void 0 : _b.unsubscribeListener());
+        }
     }
     get shouldShowScanAreaGuides() {
         return this._shouldShowScanAreaGuides;
     }
     set shouldShowScanAreaGuides(shouldShow) {
+        var _a;
         this._shouldShowScanAreaGuides = shouldShow;
-        this.controller.updateBasicOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateBasicOverlay(JSON.stringify(this.toJSON())));
     }
     get viewfinder() {
         return this._viewfinder;
     }
     set viewfinder(newViewfinder) {
+        var _a;
         this._viewfinder = newViewfinder;
-        this.controller.updateBasicOverlay(JSON.stringify(this.toJSON()));
+        void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateBasicOverlay(JSON.stringify(this.toJSON())));
     }
-    static withLabelCapture(labelCapture) {
-        return LabelCaptureBasicOverlay.withLabelCaptureForView(labelCapture, null);
-    }
-    static withLabelCaptureForView(labelCapture, view) {
-        const overlay = new LabelCaptureBasicOverlay();
-        overlay.mode = labelCapture;
-        if (view) {
-            view.addOverlay(overlay);
-        }
-        return overlay;
-    }
-    constructor() {
+    constructor(mode) {
         super();
         this.type = 'labelCaptureBasic';
+        this.controller = null;
+        this._view = null;
         this._predictedFieldBrush = LabelCaptureBasicOverlay.defaultPredictedFieldBrush.copy;
         this._capturedFieldBrush = LabelCaptureBasicOverlay.defaultCapturedFieldBrush.copy;
         this._labelBrush = LabelCaptureBasicOverlay.defaultLabelBrush.copy;
@@ -1383,18 +1554,24 @@ class LabelCaptureBasicOverlay extends DefaultSerializeable {
         this.hasListener = false;
         this._listener = null;
         this._viewfinder = null;
-        this.controller = LabelCaptureBasicOverlayController.forOverlay(this);
+        this.modeId = mode.modeId;
     }
     setBrushForFieldOfLabel(brush, field, label) {
-        return this.controller.setBrushForFieldOfLabel(brush, field, label);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setBrushForFieldOfLabel(brush, field, label);
+        });
     }
     setBrushForLabel(brush, label) {
-        return this.controller.setBrushForLabel(brush, label);
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            return (_a = this.controller) === null || _a === void 0 ? void 0 : _a.setBrushForLabel(brush, label);
+        });
     }
 }
 __decorate([
     ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "mode", void 0);
+], LabelCaptureBasicOverlay.prototype, "controller", void 0);
 __decorate([
     ignoreFromSerialization
 ], LabelCaptureBasicOverlay.prototype, "_view", void 0);
@@ -1414,9 +1591,6 @@ __decorate([
     ignoreFromSerialization
 ], LabelCaptureBasicOverlay.prototype, "_listener", void 0);
 __decorate([
-    ignoreFromSerialization
-], LabelCaptureBasicOverlay.prototype, "controller", void 0);
-__decorate([
     serializationDefault(NoViewfinder),
     nameForSerialization('viewfinder')
 ], LabelCaptureBasicOverlay.prototype, "_viewfinder", void 0);
@@ -1426,14 +1600,15 @@ var LabelCaptureValidationFlowListenerEvents;
     LabelCaptureValidationFlowListenerEvents["didCaptureLabelWithFields"] = "LabelCaptureValidationFlowListener.didCaptureLabelWithFields";
 })(LabelCaptureValidationFlowListenerEvents || (LabelCaptureValidationFlowListenerEvents = {}));
 class LabelCaptureValidationFlowOverlayController extends BaseController {
-    constructor() {
+    constructor(overlay) {
         super('LabelCaptureValidationFlowOverlayProxy');
         this.isSubscribed = false;
-    }
-    static forOverlay(overlay) {
-        const proxy = new LabelCaptureValidationFlowOverlayController();
-        proxy.overlay = overlay;
-        return proxy;
+        // Arrow function wrapper to avoid .bind(this) and always use current class state
+        this.handleDidCaptureLabelWithFieldsEventWrapper = (ev) => {
+            this.handleDidCaptureLabelWithFieldsEvent(ev);
+        };
+        this.overlay = overlay;
+        void this.initialize();
     }
     updateValidationFlowOverlay() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1441,29 +1616,42 @@ class LabelCaptureValidationFlowOverlayController extends BaseController {
         });
     }
     subscribeLabelCaptureValidationFlowListener() {
-        if (this.isSubscribed) {
-            return;
-        }
-        this._proxy.$registerListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
-        this._proxy.subscribeForEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
-        this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEvent.bind(this));
-        this.isSubscribed = true;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.isSubscribed) {
+                return;
+            }
+            yield this._proxy.$registerListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            this._proxy.subscribeForEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
+            this._proxy.eventEmitter.on(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEventWrapper);
+            this.isSubscribed = true;
+        });
     }
     unsubscribeLabelCaptureValidationFlowListener() {
-        if (!this.isSubscribed) {
-            return;
-        }
-        this._proxy.$unregisterListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
-        this._proxy.eventEmitter.off(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEvent.bind(this));
-        this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
-        this.isSubscribed = false;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.isSubscribed) {
+                return;
+            }
+            yield this._proxy.$unregisterListenerForValidationFlowEvents({ dataCaptureViewId: this.dataCaptureViewId });
+            this._proxy.eventEmitter.off(LabelCaptureValidationFlowListenerEvents.didCaptureLabelWithFields, this.handleDidCaptureLabelWithFieldsEventWrapper);
+            this._proxy.unsubscribeFromEvents(Object.values(LabelCaptureValidationFlowListenerEvents));
+            this.isSubscribed = false;
+        });
+    }
+    dispose() {
+        void this.unsubscribeLabelCaptureValidationFlowListener();
+        this._proxy.dispose();
+    }
+    initialize() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.overlay.listener) {
+                return this.subscribeLabelCaptureValidationFlowListener();
+            }
+        });
     }
     handleDidCaptureLabelWithFieldsEvent(ev) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const payload = JSON.parse(ev.data);
-            const fields = payload.fields.map((field) => LabelField.fromJSON(JSON.parse(field)));
-            this.notifyListenersOfDidCaptureLabelWithFields(fields);
-        });
+        const payload = JSON.parse(ev.data);
+        const fields = payload.fields.map((field) => LabelField.fromJSON(JSON.parse(field)));
+        this.notifyListenersOfDidCaptureLabelWithFields(fields);
     }
     notifyListenersOfDidCaptureLabelWithFields(fields) {
         var _a;
@@ -1473,70 +1661,53 @@ class LabelCaptureValidationFlowOverlayController extends BaseController {
         var _a, _b;
         return (_b = (_a = this.overlay.view) === null || _a === void 0 ? void 0 : _a.viewId) !== null && _b !== void 0 ? _b : -1;
     }
-    dispose() {
-        this.unsubscribeLabelCaptureValidationFlowListener();
-        this._proxy.dispose();
-    }
 }
 
 class LabelCaptureValidationFlowOverlay extends DefaultSerializeable {
-    set view(newView) {
-        if (newView == null) {
-            this.controller.unsubscribeLabelCaptureValidationFlowListener();
-        }
-        else if (this._view == null) {
-            this.controller.subscribeLabelCaptureValidationFlowListener();
-        }
-        this._view = newView;
-    }
     get view() {
         return this._view;
     }
-    static withLabelCaptureForView(labelCapture, view) {
-        const overlay = new LabelCaptureValidationFlowOverlay();
-        overlay.mode = labelCapture;
-        overlay.view = view;
-        if (view) {
-            view.addOverlay(overlay);
-        }
-        return overlay;
-    }
-    get listener() {
-        return this._listener;
-    }
-    set listener(listener) {
-        this.hasListener = listener != null;
-        if (this.view == null) {
-            this._listener = listener;
+    set view(newView) {
+        var _a, _b;
+        if (newView === null) {
+            this._view = null;
+            (_a = this.controller) === null || _a === void 0 ? void 0 : _a.dispose();
+            this.controller = null;
             return;
         }
-        if (listener == null) {
-            this.controller.unsubscribeLabelCaptureValidationFlowListener();
-        }
-        else if (this.listener == null) {
-            this.controller.subscribeLabelCaptureValidationFlowListener();
-        }
-        this._listener = listener;
+        this._view = newView;
+        (_b = this.controller) !== null && _b !== void 0 ? _b : (this.controller = new LabelCaptureValidationFlowOverlayController(this));
     }
-    applySettings(settings) {
-        this.settings = settings;
-        return this.controller.updateValidationFlowOverlay();
-    }
-    constructor() {
+    constructor(mode) {
         super();
         this.type = 'validationFlow';
         this.settings = null;
         this.hasListener = false;
         this._listener = null;
-        this.controller = LabelCaptureValidationFlowOverlayController.forOverlay(this);
+        this.controller = null;
+        this._view = null;
+        this.modeId = mode.modeId;
+    }
+    get listener() {
+        return this._listener;
+    }
+    set listener(listener) {
+        var _a, _b;
+        this.hasListener = listener != null;
+        this._listener = listener;
+        if (listener == null) {
+            void ((_a = this.controller) === null || _a === void 0 ? void 0 : _a.unsubscribeLabelCaptureValidationFlowListener());
+        }
+        else if (this.listener == null) {
+            void ((_b = this.controller) === null || _b === void 0 ? void 0 : _b.subscribeLabelCaptureValidationFlowListener());
+        }
+    }
+    applySettings(settings) {
+        var _a, _b;
+        this.settings = settings;
+        return (_b = (_a = this.controller) === null || _a === void 0 ? void 0 : _a.updateValidationFlowOverlay()) !== null && _b !== void 0 ? _b : Promise.resolve();
     }
 }
-__decorate([
-    ignoreFromSerialization
-], LabelCaptureValidationFlowOverlay.prototype, "mode", void 0);
-__decorate([
-    ignoreFromSerialization
-], LabelCaptureValidationFlowOverlay.prototype, "_view", void 0);
 __decorate([
     nameForSerialization('hasListener')
 ], LabelCaptureValidationFlowOverlay.prototype, "hasListener", void 0);
@@ -1546,6 +1717,9 @@ __decorate([
 __decorate([
     ignoreFromSerialization
 ], LabelCaptureValidationFlowOverlay.prototype, "controller", void 0);
+__decorate([
+    ignoreFromSerialization
+], LabelCaptureValidationFlowOverlay.prototype, "_view", void 0);
 
 class LabelCaptureValidationFlowSettings extends DefaultSerializeable {
     static create() {
@@ -1617,4 +1791,15 @@ __decorate([
     nameForSerialization('manualInputButtonText')
 ], LabelCaptureValidationFlowSettings.prototype, "_manualInputButtonText", void 0);
 
-export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayController, LabelCaptureAdvancedOverlayListenerEvents, LabelCaptureBasicOverlay, LabelCaptureBasicOverlayController, LabelCaptureBasicOverlayListenerEvents, LabelCaptureController, LabelCaptureListenerEvents, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowListenerEvents, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowOverlayController, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText, getLabelCaptureDefaults, loadLabelCaptureDefaults };
+const LABEL_PROXY_TYPE_NAMES = [
+    'LabelCaptureProxy',
+    'LabelCaptureBasicOverlayProxy',
+    'LabelCaptureAdvancedOverlayProxy',
+    'LabelCaptureValidationFlowOverlayProxy',
+];
+
+function registerLabelProxies(provider) {
+    registerProxies(LABEL_PROXY_TYPE_NAMES, provider);
+}
+
+export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LABEL_PROXY_TYPE_NAMES, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayController, LabelCaptureAdvancedOverlayListenerEvents, LabelCaptureBasicOverlay, LabelCaptureBasicOverlayController, LabelCaptureBasicOverlayListenerEvents, LabelCaptureController, LabelCaptureFeedback, LabelCaptureListenerEvents, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowListenerEvents, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowOverlayController, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText, getLabelCaptureDefaults, loadLabelCaptureDefaults, registerLabelProxies };

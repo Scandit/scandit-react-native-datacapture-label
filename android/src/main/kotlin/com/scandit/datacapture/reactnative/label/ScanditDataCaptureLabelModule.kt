@@ -18,9 +18,10 @@ import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
 import com.scandit.datacapture.reactnative.barcode.batch.nativeViewFromJson
 import com.scandit.datacapture.reactnative.core.utils.ReactNativeResult
+import com.scandit.datacapture.reactnative.core.utils.modeId
 
 class ScanditDataCaptureLabelModule(
-    reactContext: ReactApplicationContext,
+    private val reactContext: ReactApplicationContext,
     private val labelCaptureModule: LabelCaptureModule,
 ) : ReactContextBaseJavaModule(reactContext) {
 
@@ -72,7 +73,7 @@ class ScanditDataCaptureLabelModule(
     @ReactMethod
     fun finishDidUpdateSessionCallback(readableMap: ReadableMap) {
         val enabled = readableMap.getBoolean("isEnabled")
-        labelCaptureModule.finishDidUpdateSession(enabled)
+        labelCaptureModule.finishDidUpdateSession(readableMap.modeId, enabled)
     }
 
     @ReactMethod
@@ -121,7 +122,7 @@ class ScanditDataCaptureLabelModule(
             labelId,
             object : ViewFromJsonResolver {
                 override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
+                    return reactContext.currentActivity?.let {
                         nativeViewFromJson(it, viewJson)
                     }
                 }
@@ -139,7 +140,7 @@ class ScanditDataCaptureLabelModule(
             readableMap.toHashMap(),
             object : ViewFromJsonResolver {
                 override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
+                    return reactContext.currentActivity?.let {
                         nativeViewFromJson(it, viewJson)
                     }
                 }
@@ -300,6 +301,19 @@ class ScanditDataCaptureLabelModule(
     @ReactMethod
     fun removeListeners(@Suppress("UNUSED_PARAMETER") count: Int?) {
         // Keep: Required for RN built in Event Emitter Calls.
+    }
+
+    @ReactMethod
+    fun updateLabelCaptureFeedback(readableMap: ReadableMap, promise: Promise) {
+        val feedbackJson = readableMap.getString("feedbackJson") ?: return run {
+            promise.reject(IllegalArgumentException("feedbackJson"))
+        }
+
+        labelCaptureModule.updateLabelCaptureFeedback(
+            readableMap.modeId,
+            feedbackJson,
+            ReactNativeResult(promise)
+        )
     }
 
     companion object {
