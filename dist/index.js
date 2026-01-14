@@ -1,25 +1,36 @@
-import { LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, registerLabelProxies, loadLabelCaptureDefaults } from './label.js';
+import { CameraPosition, FrameSourceState, DataCaptureView, initCoreProxy, createRNNativeCaller, initCoreDefaults } from 'scandit-react-native-datacapture-core';
+import { CameraOwnershipHelper, FactoryMaker, createNativeProxy } from 'scandit-react-native-datacapture-core/dist/core';
+import { NativeModules, AppState } from 'react-native';
+import { LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, loadLabelCaptureDefaults } from './label.js';
 export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureFeedback, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
-import { CameraPosition, FrameSourceState, DataCaptureView, initCoreProxy, initCoreDefaults, getNativeModule, createRNNativeCaller } from 'scandit-react-native-datacapture-core';
-import { AppState, NativeModules } from 'react-native';
 import React, { forwardRef, useRef, useState, useMemo, useCallback, useEffect } from 'react';
-import { CameraOwnershipHelper } from 'scandit-react-native-datacapture-core/dist/core';
 import 'scandit-react-native-datacapture-barcode/dist/barcode';
-
-class RNLabelNativeCallerProvider {
-    getNativeCaller(_proxyType) {
-        return createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
-    }
-}
 
 function initLabelProxy() {
     initCoreProxy();
-    registerLabelProxies(new RNLabelNativeCallerProvider());
+    FactoryMaker.bindLazyInstance('LabelCaptureProxy', () => {
+        const caller = createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
+        return createNativeProxy(caller);
+    });
+    FactoryMaker.bindLazyInstance('LabelCaptureBasicOverlayProxy', () => {
+        const caller = createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
+        return createNativeProxy(caller);
+    });
+    FactoryMaker.bindLazyInstance('LabelCaptureAdvancedOverlayProxy', () => {
+        const caller = createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
+        return createNativeProxy(caller);
+    });
+    FactoryMaker.bindLazyInstance('LabelCaptureValidationFlowOverlayProxy', () => {
+        const caller = createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
+        return createNativeProxy(caller);
+    });
 }
 
+// tslint:disable-next-line:variable-name
+const DataCaptureLabel = NativeModules.ScanditDataCaptureLabel;
 function initLabelDefaults() {
     initCoreDefaults();
-    loadLabelCaptureDefaults(getNativeModule('ScanditDataCaptureLabel').Defaults);
+    loadLabelCaptureDefaults(DataCaptureLabel.Defaults);
 }
 
 class LabelCaptureAdvancedOverlayView extends React.Component {
@@ -36,7 +47,9 @@ class LabelCaptureAdvancedOverlayView extends React.Component {
 }
 
 // tslint:disable-next-line
-const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
+const LabelCaptureView = forwardRef(function LabelCaptureView(props, 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ref) {
     const currentProps = useRef({
         isEnabled: props.isEnabled,
         desiredCameraState: props.desiredCameraState,
@@ -64,7 +77,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         const settings = props.labelCaptureSettings || LabelCaptureSettings.settingsFromLabelDefinitions([], {});
         // Create the label capture instance with context and settings
         labelCaptureModeRef.current = new LabelCapture(settings);
-        labelCaptureModeRef.current['parentId'] = viewId;
+        labelCaptureModeRef.current.parentId = viewId;
         return labelCaptureModeRef.current;
     }, [props.labelCaptureSettings, viewId]);
     useEffect(() => {
@@ -81,7 +94,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         };
         if (props.desiredCameraState) {
             const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
-            void CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
+            CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
                 await camera.switchToDesiredState(props.desiredCameraState);
             });
         }
@@ -131,20 +144,20 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         }
         validationFlowOverlayRef.current = new LabelCaptureValidationFlowOverlay(getMode());
         if (props.validationFlowSettings) {
-            void validationFlowOverlayRef.current.applySettings(props.validationFlowSettings);
+            validationFlowOverlayRef.current.applySettings(props.validationFlowSettings);
         }
         return validationFlowOverlayRef.current;
     }, [getMode, props.validationFlowSettings]);
     // Remove getCamera function as we'll use CameraOwnershipHelper
     /* SETUP */
     useEffect(() => {
-        void doSetup();
+        doSetup();
         const subscription = AppState.addEventListener('change', nextAppState => {
             if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
                 getMode().isEnabled = currentProps.current.isEnabled;
                 if (currentProps.current.desiredCameraState) {
                     const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
-                    void CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
+                    CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
                         await camera.switchToDesiredState(currentProps.current.desiredCameraState);
                     });
                 }
@@ -152,7 +165,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
             else {
                 getMode().isEnabled = false;
                 const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
-                void CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
+                CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
                     await camera.switchToDesiredState(FrameSourceState.Off);
                 });
             }
@@ -183,15 +196,15 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         /* Setup camera with ownership - WAIT for completion */
         await setupCamera();
         /* Adding Label Capture mode */
-        await props.context.addMode(getMode());
+        props.context.addMode(getMode());
         /* Adding Label Capture Overlays */
         if (viewRef.current) {
-            await viewRef.current.addOverlay(getBasicOverlay());
+            viewRef.current.addOverlay(getBasicOverlay());
             if (!props.useValidationFlow) {
-                await viewRef.current.addOverlay(getAdvancedOverlay());
+                viewRef.current.addOverlay(getAdvancedOverlay());
             }
             else {
-                await viewRef.current.addOverlay(getValidationFlowOverlay());
+                viewRef.current.addOverlay(getValidationFlowOverlay());
             }
         }
     }, [
@@ -219,16 +232,15 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         }
         /* Cleaning Data Capture Context */
         if (labelCaptureModeRef.current) {
-            void props.context.removeMode(labelCaptureModeRef.current);
+            props.context.removeMode(labelCaptureModeRef.current);
         }
         /* Cleaning Overlays */
         if (viewRef.current) {
-            const view = viewRef.current;
-            void Promise.all((view['view']?.overlays || []).map((overlay) => view['view']?.removeOverlay(overlay)));
+            viewRef.current.view?.overlays?.forEach((overlay) => viewRef.current?.view?.removeOverlay(overlay));
         }
         /* Turn off camera and release ownership */
         const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
-        void CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
+        CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
             await camera.switchToDesiredState(FrameSourceState.Off);
             await props.context.setFrameSource(null);
         }).finally(() => {
@@ -248,13 +260,13 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
     /* LABEL CAPTURE MODE */
     useEffect(() => {
         if (props.labelCaptureSettings && labelCaptureModeRef.current) {
-            void labelCaptureModeRef.current.applySettings(props.labelCaptureSettings);
+            labelCaptureModeRef.current.applySettings(props.labelCaptureSettings);
         }
     }, [props.labelCaptureSettings, getMode]);
     useEffect(() => {
         if (!labelCaptureModeRef.current || !componentIsSetUp.current)
             return;
-        const listeners = [...getMode()['listeners']];
+        const listeners = [...getMode().listeners];
         listeners.forEach(listener => {
             getMode().removeListener(listener);
         });
@@ -340,7 +352,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
     useEffect(() => {
         const validationFlowOverlay = getValidationFlowOverlay();
         if (props.validationFlowSettings && validationFlowOverlay) {
-            void validationFlowOverlay.applySettings(props.validationFlowSettings);
+            validationFlowOverlay.applySettings(props.validationFlowSettings);
         }
         // Setup validation flow overlay listener from props
         const validationFlowOverlayListener = {
@@ -358,19 +370,16 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
     useEffect(() => {
         if (!componentIsSetUp.current || !viewRef.current)
             return;
-        const view = viewRef.current;
-        void (async () => {
-            // Remove all existing overlays
-            view['removeAllOverlays']();
-            // Add the appropriate overlays based on useValidationFlow
-            if (!props.useValidationFlow) {
-                await view.addOverlay(getBasicOverlay());
-                await view.addOverlay(getAdvancedOverlay());
-            }
-            else {
-                await view.addOverlay(getValidationFlowOverlay());
-            }
-        })();
+        // Remove all existing overlays
+        viewRef.current?.removeAllOverlays();
+        // Add the appropriate overlays based on useValidationFlow
+        if (!props.useValidationFlow) {
+            viewRef.current.addOverlay(getBasicOverlay());
+            viewRef.current.addOverlay(getAdvancedOverlay());
+        }
+        else {
+            viewRef.current.addOverlay(getValidationFlowOverlay());
+        }
     }, [props.useValidationFlow, getBasicOverlay, getAdvancedOverlay, getValidationFlowOverlay]);
     /* CAMERA */
     useEffect(() => {
@@ -378,7 +387,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
             return; // Don't run until camera is ready
         const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
         const settings = props.cameraSettings || LabelCapture.createRecommendedCameraSettings();
-        void CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
+        CameraOwnershipHelper.withCamera(position, cameraOwner, async (camera) => {
             await camera.applySettings(settings);
         });
     }, [props.cameraSettings, props.desiredCameraPosition, cameraOwner, isCameraSetup]);
@@ -392,11 +401,11 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
             // Release old camera ownership
             CameraOwnershipHelper.releaseOwnership(currentOwnedPosition, cameraOwner);
             // Set up new camera
-            void setupCamera();
+            setupCamera();
         }
         else if (!currentOwnedPosition) {
             // No camera owned yet, set up new camera
-            void setupCamera();
+            setupCamera();
         }
     }, [props.desiredCameraPosition, cameraOwner, setupCamera, isCameraSetup]);
     /* CONTROLS */
@@ -404,7 +413,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         if (!isCameraSetup || !props.desiredTorchState)
             return; // Don't run until camera is ready
         const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
-        void CameraOwnershipHelper.withCameraWhenAvailable(position, cameraOwner, camera => {
+        CameraOwnershipHelper.withCameraWhenAvailable(position, cameraOwner, async (camera) => {
             camera.desiredTorchState = props.desiredTorchState;
         });
     }, [props.desiredTorchState, props.desiredCameraPosition, cameraOwner, isCameraSetup]);
@@ -417,7 +426,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         if (!props.torchSwitchControl)
             return;
         torchSwitchControl.current = props.torchSwitchControl;
-        void viewRef.current.addControl(torchSwitchControl.current);
+        viewRef.current.addControl(torchSwitchControl.current);
     }, [props.torchSwitchControl]);
     useEffect(() => {
         if (!viewRef.current)
@@ -428,7 +437,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         if (!props.zoomSwitchControl)
             return;
         zoomSwitchControl.current = props.zoomSwitchControl;
-        void viewRef.current.addControl(zoomSwitchControl.current);
+        viewRef.current.addControl(zoomSwitchControl.current);
     }, [props.zoomSwitchControl]);
     /* NAVIGATION */
     useEffect(() => {
@@ -436,7 +445,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
             return;
         try {
             const unsubscribeFromFocus = props.navigation.addListener('focus', () => {
-                void doSetup();
+                doSetup();
             });
             const unsubscribeFromBlur = props.navigation.addListener('blur', () => {
                 doCleanup();

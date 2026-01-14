@@ -1,13 +1,13 @@
 {
   "name": "scandit-react-native-datacapture-label",
-  "version": "8.1.0",
+  "version": "8.0.1",
   "description": "Scandit Data Capture SDK for React Native",
   "homepage": "https://github.com/Scandit/scandit-react-native-datacapture-label",
   "main": "dist/index.js",
   "types": "dist/dts/index.d.ts",
   "scripts": {
     "test": "pnpm lint",
-    "lint": "eslint --debug ts",
+    "lint": "tslint --project .",
     "build": "pnpm run rollup",
     "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
     "start": "pnpm build -- --watch"
@@ -26,6 +26,7 @@
     "react-native": ">=0.70.0 <1.0.x"
   },
   "devDependencies": {
+    "tslint": "^6.1.2",
     "typescript": "4.9.5",
     "rollup": "3.29.2",
     "@rollup/plugin-node-resolve": "15.2.1",
@@ -34,11 +35,11 @@
     "rollup-plugin-modify": "3.0.0"
   },
   "dependencies": {
-    "scandit-react-native-datacapture-core": "8.1.0",
-    "scandit-react-native-datacapture-barcode": "8.1.0",
-    "scandit-datacapture-frameworks-barcode": "8.1.0",
-    "scandit-datacapture-frameworks-core": "8.1.0",
-    "scandit-datacapture-frameworks-label": "8.1.0"
+    "scandit-react-native-datacapture-core": "8.0.1",
+    "scandit-react-native-datacapture-barcode": "8.0.1",
+    "scandit-datacapture-frameworks-barcode": "8.0.1",
+    "scandit-datacapture-frameworks-core": "8.0.1",
+    "scandit-datacapture-frameworks-label": "8.0.1"
   },
   "packageManager": "pnpm@10.15.0"
 }
