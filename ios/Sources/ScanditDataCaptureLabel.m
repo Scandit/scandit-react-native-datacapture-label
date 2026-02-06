@@ -53,7 +53,6 @@ RCT_EXTERN_METHOD(setOffsetForCapturedLabelField
                   : (RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(clearCapturedLabelViews
-                  : (NSDictionary *)data resolver
                   : (RCTPromiseResolveBlock)resolve rejecter
                   : (RCTPromiseRejectBlock)reject)
 
@@ -61,17 +60,13 @@ RCT_EXTERN_METHOD(registerListenerForEvents : (NSDictionary *)data)
 
 RCT_EXTERN_METHOD(unregisterListenerForEvents : (NSDictionary *)data)
 
-RCT_EXTERN_METHOD(registerListenerForBasicOverlayEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(registerListenerForBasicOverlayEvents)
 
-RCT_EXTERN_METHOD(unregisterListenerForBasicOverlayEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(unregisterListenerForBasicOverlayEvents)
 
-RCT_EXTERN_METHOD(registerListenerForAdvancedOverlayEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(registerListenerForAdvancedOverlayEvents)
 
-RCT_EXTERN_METHOD(unregisterListenerForAdvancedOverlayEvents : (NSDictionary *)data)
-
-RCT_EXTERN_METHOD(registerListenerForValidationFlowEvents : (NSDictionary *)data)
-
-RCT_EXTERN_METHOD(unregisterListenerForValidationFlowEvents : (NSDictionary *)data)
+RCT_EXTERN_METHOD(unregisterListenerForAdvancedOverlayEvents)
 
 RCT_EXTERN_METHOD(updateLabelCaptureBasicOverlay
                   : (NSDictionary *)data resolve
@@ -83,17 +78,7 @@ RCT_EXTERN_METHOD(updateLabelCaptureAdvancedOverlay
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(updateLabelCaptureValidationFlowOverlay
-                  : (NSDictionary *)data resolve
-                  : (RCTPromiseResolveBlock)resolve reject
-                  : (RCTPromiseRejectBlock)reject)
-
 RCT_EXTERN_METHOD(updateLabelCaptureSettings
-                  : (NSDictionary *)data resolve
-                  : (RCTPromiseResolveBlock)resolve reject
-                  : (RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(updateLabelCaptureFeedback
                   : (NSDictionary *)data resolve
                   : (RCTPromiseResolveBlock)resolve reject
                   : (RCTPromiseRejectBlock)reject)
