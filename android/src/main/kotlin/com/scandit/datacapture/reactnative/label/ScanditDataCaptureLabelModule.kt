@@ -11,10 +11,9 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
-import com.facebook.react.bridge.ReadableMap
 import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
-import com.scandit.datacapture.reactnative.barcode.batch.nativeViewFromJson
+import com.scandit.datacapture.reactnative.barcode.tracking.nativeViewFromJson
 import com.scandit.datacapture.reactnative.core.utils.ReactNativeResult
 
 class ScanditDataCaptureLabelModule(
@@ -66,18 +65,16 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun finishDidUpdateSessionCallback(readableMap: ReadableMap) {
-        val enabled = readableMap.getBoolean("isEnabled")
+    fun finishDidUpdateSessionCallback(enabled: Boolean) {
         labelCaptureModule.finishDidUpdateSession(enabled)
     }
 
     @ReactMethod
     fun setBrushForLabel(
-        readableMap: ReadableMap,
+        brushJson: String?,
+        labelId: Int,
         promise: Promise
     ) {
-        val brushJson = readableMap.getString("brushJson")
-        val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setBrushForLabel(
             brushJson,
             labelId,
@@ -87,13 +84,11 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setBrushForFieldOfLabel(
-        readableMap: ReadableMap,
+        brushJson: String?,
+        fieldName: String,
+        labelId: Int,
         promise: Promise
     ) {
-        val brushJson = readableMap.getString("brushJson")
-        val fieldName = readableMap.getString("fieldName") ?: ""
-        val labelId = readableMap.getInt("trackingId")
-
         labelCaptureModule.setBrushForFieldOfLabel(
             brushJson,
             fieldName,
@@ -104,11 +99,10 @@ class ScanditDataCaptureLabelModule(
 
     @ReactMethod
     fun setViewForCapturedLabel(
-        readableMap: ReadableMap,
+        viewJson: String?,
+        labelId: Int,
         promise: Promise
     ) {
-        val viewJson = readableMap.getString("jsonView")
-        val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setViewForCapturedLabel(
             viewJson,
             labelId,
@@ -124,87 +118,27 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun setViewForCapturedLabelField(
-        readableMap: ReadableMap,
-        promise: Promise
-    ) {
-        labelCaptureModule.setViewForLabelField(
-            readableMap.toHashMap(),
-            object : ViewFromJsonResolver {
-                override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
-                        nativeViewFromJson(it, viewJson)
-                    }
-                }
-            },
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
     fun setAnchorForCapturedLabel(
-        readableMap: ReadableMap,
+        anchorJson: String,
+        labelId: Int,
         promise: Promise
     ) {
-        val anchor = readableMap.getString("anchor")!!
-        val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setAnchorForCapturedLabel(
-            anchor,
+            anchorJson,
             labelId,
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun setAnchorForCapturedLabelField(
-        readableMap: ReadableMap,
-        promise: Promise
-    ) {
-        val anchor = readableMap.getString("anchor") ?: run {
-            promise.reject(IllegalArgumentException("anchor"))
-            return
-        }
-        val labelFieldId = readableMap.getString("identifier") ?: run {
-            promise.reject(IllegalArgumentException("identifier"))
-            return
-        }
-        labelCaptureModule.setAnchorForLabelField(
-            anchor,
-            labelFieldId,
             ReactNativeResult(promise)
         )
     }
 
     @ReactMethod
     fun setOffsetForCapturedLabel(
-        readableMap: ReadableMap,
+        offsetJson: String,
+        labelId: Int,
         promise: Promise
     ) {
-        val offsetJson = readableMap.getString("offsetJson")!!
-        val labelId = readableMap.getInt("trackingId")
         labelCaptureModule.setOffsetForCapturedLabel(
             offsetJson,
             labelId,
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun setOffsetForLabelField(
-        readableMap: ReadableMap,
-        promise: Promise
-    ) {
-        val offset = readableMap.getString("offset") ?: run {
-            promise.reject(IllegalArgumentException("offset"))
-            return
-        }
-        val labelFieldId = readableMap.getString("identifier") ?: run {
-            promise.reject(IllegalArgumentException("identifier"))
-            return
-        }
-        labelCaptureModule.setOffsetForLabelField(
-            offset,
-            labelFieldId,
             ReactNativeResult(promise)
         )
     }
@@ -215,26 +149,22 @@ class ScanditDataCaptureLabelModule(
     }
 
     @ReactMethod
-    fun setModeEnabledState(readableMap: ReadableMap) {
-        val enabled = readableMap.getBoolean("isEnabled")
+    fun setModeEnabledState(enabled: Boolean) {
         labelCaptureModule.setModeEnabled(enabled)
     }
 
     @ReactMethod
-    fun updateLabelCaptureBasicOverlay(readableMap: ReadableMap, promise: Promise) {
-        val overlayJson = readableMap.getString("basicOverlayJson") ?: ""
+    fun updateLabelCaptureBasicOverlay(overlayJson: String, promise: Promise) {
         labelCaptureModule.updateBasicOverlay(overlayJson, ReactNativeResult(promise))
     }
 
     @ReactMethod
-    fun updateLabelCaptureAdvancedOverlay(readableMap: ReadableMap, promise: Promise) {
-        val overlayJson = readableMap.getString("advancedOverlayJson")!!
+    fun updateLabelCaptureAdvancedOverlay(overlayJson: String, promise: Promise) {
         labelCaptureModule.updateAdvancedOverlay(overlayJson, ReactNativeResult(promise))
     }
 
     @ReactMethod
-    fun updateLabelCaptureSettings(readableMap: ReadableMap, promise: Promise) {
-        val settingsJson = readableMap.getString("settingsJson") ?: ""
+    fun applyLabelCaptureModeSettings(settingsJson: String, promise: Promise) {
         labelCaptureModule.applyModeSettings(settingsJson, ReactNativeResult(promise))
     }
 
