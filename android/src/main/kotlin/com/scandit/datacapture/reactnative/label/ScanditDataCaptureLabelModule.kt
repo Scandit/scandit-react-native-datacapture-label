@@ -6,19 +6,24 @@
 
 package com.scandit.datacapture.reactnative.label
 
-import android.view.View
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
-import com.scandit.datacapture.frameworks.core.ui.ViewFromJsonResolver
+import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.module.annotations.ReactModule
+import com.scandit.datacapture.frameworks.core.CoreModule
+import com.scandit.datacapture.frameworks.core.FrameworkModule
+import com.scandit.datacapture.frameworks.core.locator.ServiceLocator
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
-import com.scandit.datacapture.reactnative.barcode.tracking.nativeViewFromJson
+import com.scandit.datacapture.reactnative.core.utils.ReactNativeMethodCall
 import com.scandit.datacapture.reactnative.core.utils.ReactNativeResult
 
-class ScanditDataCaptureLabelModule(
-    reactContext: ReactApplicationContext,
+@ReactModule(name = ScanditDataCaptureLabelModule.NAME)
+open class ScanditDataCaptureLabelModule(
+    private val reactContext: ReactApplicationContext,
     private val labelCaptureModule: LabelCaptureModule,
+    private val serviceLocator: ServiceLocator<FrameworkModule>
 ) : ReactContextBaseJavaModule(reactContext) {
 
     override fun invalidate() {
@@ -26,7 +31,7 @@ class ScanditDataCaptureLabelModule(
         super.invalidate()
     }
 
-    override fun getName(): String = "ScanditDataCaptureLabel"
+    override fun getName(): String = NAME
 
     override fun getConstants(): MutableMap<String, Any> = mutableMapOf(
         DEFAULTS_KEY to mapOf<String, Any?>(
@@ -35,140 +40,30 @@ class ScanditDataCaptureLabelModule(
     )
 
     @ReactMethod
-    fun registerListenerForEvents() {
-        labelCaptureModule.addListener()
-    }
+    fun executeLabel(data: ReadableMap, promise: Promise) {
+        val coreModule = serviceLocator.resolve(
+            CoreModule::class.java.simpleName
+        ) as? CoreModule ?: return run {
+            promise.reject("-1", "Unable to retrieve the CoreModule from the locator.")
+        }
 
-    @ReactMethod
-    fun unregisterListenerForEvents() {
-        labelCaptureModule.removeListener()
-    }
-
-    @ReactMethod
-    fun registerListenerForBasicOverlayEvents() {
-        labelCaptureModule.addBasicOverlayListener()
-    }
-
-    @ReactMethod
-    fun unregisterListenerForBasicOverlayEvents() {
-        labelCaptureModule.removeBasicOverlayListener()
-    }
-
-    @ReactMethod
-    fun registerListenerForAdvancedOverlayEvents() {
-        labelCaptureModule.addAdvancedOverlayListener()
-    }
-
-    @ReactMethod
-    fun unregisterListenerForAdvancedOverlayEvents() {
-        labelCaptureModule.removeAdvancedOverlayListener()
-    }
-
-    @ReactMethod
-    fun finishDidUpdateSessionCallback(enabled: Boolean) {
-        labelCaptureModule.finishDidUpdateSession(enabled)
-    }
-
-    @ReactMethod
-    fun setBrushForLabel(
-        brushJson: String?,
-        labelId: Int,
-        promise: Promise
-    ) {
-        labelCaptureModule.setBrushForLabel(
-            brushJson,
-            labelId,
-            ReactNativeResult(promise)
+        val result = coreModule.execute(
+            ReactNativeMethodCall(data),
+            ReactNativeResult(promise),
+            labelCaptureModule
         )
-    }
 
-    @ReactMethod
-    fun setBrushForFieldOfLabel(
-        brushJson: String?,
-        fieldName: String,
-        labelId: Int,
-        promise: Promise
-    ) {
-        labelCaptureModule.setBrushForFieldOfLabel(
-            brushJson,
-            fieldName,
-            labelId,
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun setViewForCapturedLabel(
-        viewJson: String?,
-        labelId: Int,
-        promise: Promise
-    ) {
-        labelCaptureModule.setViewForCapturedLabel(
-            viewJson,
-            labelId,
-            object : ViewFromJsonResolver {
-                override fun getView(viewJson: String): View? {
-                    return currentActivity?.let {
-                        nativeViewFromJson(it, viewJson)
-                    }
-                }
-            },
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun setAnchorForCapturedLabel(
-        anchorJson: String,
-        labelId: Int,
-        promise: Promise
-    ) {
-        labelCaptureModule.setAnchorForCapturedLabel(
-            anchorJson,
-            labelId,
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun setOffsetForCapturedLabel(
-        offsetJson: String,
-        labelId: Int,
-        promise: Promise
-    ) {
-        labelCaptureModule.setOffsetForCapturedLabel(
-            offsetJson,
-            labelId,
-            ReactNativeResult(promise)
-        )
-    }
-
-    @ReactMethod
-    fun clearCapturedLabelViews(promise: Promise) {
-        labelCaptureModule.clearCapturedLabelViews(ReactNativeResult(promise))
-    }
-
-    @ReactMethod
-    fun setModeEnabledState(enabled: Boolean) {
-        labelCaptureModule.setModeEnabled(enabled)
-    }
-
-    @ReactMethod
-    fun updateLabelCaptureBasicOverlay(overlayJson: String, promise: Promise) {
-        labelCaptureModule.updateBasicOverlay(overlayJson, ReactNativeResult(promise))
-    }
-
-    @ReactMethod
-    fun updateLabelCaptureAdvancedOverlay(overlayJson: String, promise: Promise) {
-        labelCaptureModule.updateAdvancedOverlay(overlayJson, ReactNativeResult(promise))
-    }
-
-    @ReactMethod
-    fun applyLabelCaptureModeSettings(settingsJson: String, promise: Promise) {
-        labelCaptureModule.applyModeSettings(settingsJson, ReactNativeResult(promise))
+        if (!result) {
+            val methodName = data.getString("methodName") ?: "unknown"
+            promise.reject(
+                "METHOD_NOT_FOUND",
+                "Unknown Core method: $methodName"
+            )
+        }
     }
 
     companion object {
+        const val NAME = "ScanditDataCaptureLabel"
         private const val DEFAULTS_KEY = "Defaults"
     }
 }
