@@ -9,7 +9,5 @@ export { LabelFieldLocation, LabelFieldLocationType } from 'scandit-datacapture-
 export { BarcodeField, TextField, CustomBarcode, CustomText, SerialNumberBarcode, PartNumberBarcode, ImeiOneBarcode, ImeiTwoBarcode, UnitPriceText, TotalPriceText, WeightText, PackingDateText, ExpiryDateText } from 'scandit-datacapture-frameworks-label';
 export { LabelDateFormat, LabelDateResult, LabelDateComponentFormat } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowListener, LabelCaptureValidationFlowSettings } from 'scandit-datacapture-frameworks-label';
-export { AdaptiveRecognitionResult, AdaptiveRecognitionResultType, ReceiptScanningResult, ReceiptScanningLineItem } from 'scandit-datacapture-frameworks-label';
-export { LabelCaptureAdaptiveRecognitionOverlay, LabelCaptureAdaptiveRecognitionListener, LabelCaptureAdaptiveRecognitionSettings } from 'scandit-datacapture-frameworks-label';
 export * from './LabelCaptureAdvancedOverlayView';
 export * from './LabelCaptureView';
