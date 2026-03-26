@@ -1,14 +1,16 @@
-import { LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, registerLabelProxies, loadLabelCaptureDefaults } from './label.js';
-export { BarcodeField, CapturedLabel, CustomBarcode, CustomText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureFeedback, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, PackingDateText, PartNumberBarcode, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
-import { CameraPosition, FrameSourceState, DataCaptureView, initCoreProxy, initCoreDefaults, getNativeModule, createRNNativeCaller } from 'scandit-react-native-datacapture-core';
-import { AppState, NativeModules } from 'react-native';
+import { setLabelCaptureDefaultsLoader, LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, registerLabelProxies, loadLabelCaptureDefaults } from './label.js';
+export { AdaptiveRecognitionMode, AdaptiveRecognitionResult, AdaptiveRecognitionResultType, BarcodeField, CapturedLabel, CustomBarcode, CustomText, DateText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdaptiveRecognitionOverlay, LabelCaptureAdaptiveRecognitionSettings, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureFeedback, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, LabelFieldValueType, LabelResultUpdateType, PackingDateText, PartNumberBarcode, ReceiptScanningLineItem, ReceiptScanningResult, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
+import { CameraPosition, FrameSourceState, DataCaptureView, initCoreProxy, initCoreDefaults, getModuleDefaults, getNativeModule, createRNNativeCaller } from 'scandit-react-native-datacapture-core';
 import React, { forwardRef, useRef, useState, useMemo, useCallback, useEffect } from 'react';
+import { AppState } from 'react-native';
 import { CameraOwnershipHelper } from 'scandit-react-native-datacapture-core/dist/core';
 import 'scandit-react-native-datacapture-barcode/dist/barcode';
 
 class RNLabelNativeCallerProvider {
     getNativeCaller(_proxyType) {
-        return createRNNativeCaller(NativeModules.ScanditDataCaptureLabel);
+        // Use getNativeModule which handles both TurboModules and legacy modules
+        const nativeModule = getNativeModule('ScanditDataCaptureLabel');
+        return createRNNativeCaller(nativeModule);
     }
 }
 
@@ -19,8 +21,9 @@ function initLabelProxy() {
 
 function initLabelDefaults() {
     initCoreDefaults();
-    loadLabelCaptureDefaults(getNativeModule('ScanditDataCaptureLabel').Defaults);
+    loadLabelCaptureDefaults(getModuleDefaults('ScanditDataCaptureLabel'));
 }
+setLabelCaptureDefaultsLoader(initLabelDefaults);
 
 class LabelCaptureAdvancedOverlayView extends React.Component {
     static moduleName = 'LabelCaptureAdvancedOverlayViewComponent';
@@ -133,8 +136,12 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         if (props.validationFlowSettings) {
             void validationFlowOverlayRef.current.applySettings(props.validationFlowSettings);
         }
+        if (props.shouldHandleKeyboardInsetsInternally !== undefined) {
+            validationFlowOverlayRef.current.shouldHandleKeyboardInsetsInternally =
+                props.shouldHandleKeyboardInsetsInternally;
+        }
         return validationFlowOverlayRef.current;
-    }, [getMode, props.validationFlowSettings]);
+    }, [getMode, props.validationFlowSettings, props.shouldHandleKeyboardInsetsInternally]);
     // Remove getCamera function as we'll use CameraOwnershipHelper
     /* SETUP */
     useEffect(() => {
@@ -224,7 +231,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         /* Cleaning Overlays */
         if (viewRef.current) {
             const view = viewRef.current;
-            void Promise.all((view['view']?.overlays || []).map((overlay) => view['view']?.removeOverlay(overlay)));
+            void Promise.all((view['view']?.overlays || []).map(overlay => view['view']?.removeOverlay(overlay)));
         }
         /* Turn off camera and release ownership */
         const position = props.desiredCameraPosition || CameraPosition.WorldFacing;
@@ -299,7 +306,18 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
         if (props.brushForFieldOfLabel || props.brushForLabel || props.didTapLabel) {
             overlay.listener = basicOverlayListener;
         }
-    }, [props.brush, props.predictedFieldBrush, props.capturedFieldBrush, props.labelBrush, props.shouldShowScanAreaGuides, props.viewfinder, props.brushForFieldOfLabel, props.brushForLabel, props.didTapLabel, getBasicOverlay]);
+    }, [
+        props.brush,
+        props.predictedFieldBrush,
+        props.capturedFieldBrush,
+        props.labelBrush,
+        props.shouldShowScanAreaGuides,
+        props.viewfinder,
+        props.brushForFieldOfLabel,
+        props.brushForLabel,
+        props.didTapLabel,
+        getBasicOverlay,
+    ]);
     /* ADVANCED OVERLAY */
     useEffect(() => {
         const advancedOverlay = getAdvancedOverlay();
@@ -335,12 +353,24 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
             props.offsetForCapturedLabelField) {
             advancedOverlay.listener = advOverlayListener;
         }
-    }, [props.viewForCapturedLabel, props.anchorForCapturedLabel, props.offsetForCapturedLabel, props.viewForCapturedLabelField, props.anchorForCapturedLabelField, props.offsetForCapturedLabelField, props.shouldShowScanAreaGuides, getAdvancedOverlay]);
+    }, [
+        props.viewForCapturedLabel,
+        props.anchorForCapturedLabel,
+        props.offsetForCapturedLabel,
+        props.viewForCapturedLabelField,
+        props.anchorForCapturedLabelField,
+        props.offsetForCapturedLabelField,
+        props.shouldShowScanAreaGuides,
+        getAdvancedOverlay,
+    ]);
     /* VALIDATION FLOW OVERLAY */
     useEffect(() => {
         const validationFlowOverlay = getValidationFlowOverlay();
         if (props.validationFlowSettings && validationFlowOverlay) {
             void validationFlowOverlay.applySettings(props.validationFlowSettings);
+        }
+        if (props.shouldHandleKeyboardInsetsInternally !== undefined) {
+            validationFlowOverlay.shouldHandleKeyboardInsetsInternally = props.shouldHandleKeyboardInsetsInternally;
         }
         // Setup validation flow overlay listener from props
         const validationFlowOverlayListener = {
@@ -348,12 +378,24 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, _ref) {
                 ((_fields) => {
                     return;
                 }),
+            didSubmitManualInputForField: props.didSubmitManualInputForField ||
+                ((_field) => {
+                    return;
+                }),
+            didUpdateValidationFlowResult: props.didUpdateValidationFlowResult || (async () => { }),
         };
         // Set the listener if any callback is provided
-        if (props.didCaptureLabelWithFields) {
+        if (props.didCaptureLabelWithFields || props.didSubmitManualInputForField) {
             validationFlowOverlay.listener = validationFlowOverlayListener;
         }
-    }, [props.validationFlowSettings, props.didCaptureLabelWithFields, getValidationFlowOverlay]);
+    }, [
+        props.validationFlowSettings,
+        props.shouldHandleKeyboardInsetsInternally,
+        props.didCaptureLabelWithFields,
+        props.didSubmitManualInputForField,
+        props.didUpdateValidationFlowResult,
+        getValidationFlowOverlay,
+    ]);
     /* OVERLAY MODE SWITCHING */
     useEffect(() => {
         if (!componentIsSetUp.current || !viewRef.current)

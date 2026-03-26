@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleProp, ViewStyle } from 'react-native';
 import { Brush, CameraPosition, CameraSettings, DataCaptureContext, DataCaptureView, FrameSourceState, TorchState, TorchSwitchControl, ZoomSwitchControl, Viewfinder, Anchor, PointWithUnit } from 'scandit-react-native-datacapture-core';
-import { LabelCapture, LabelCaptureBasicOverlay, LabelCaptureSettings, CapturedLabel, LabelCaptureSession, LabelField, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowSettings } from 'scandit-datacapture-frameworks-label';
+import { LabelCapture, LabelCaptureBasicOverlay, LabelCaptureSettings, CapturedLabel, LabelCaptureSession, LabelField, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowSettings, LabelResultUpdateType } from 'scandit-datacapture-frameworks-label';
 import { LabelCaptureAdvancedOverlayView } from './LabelCaptureAdvancedOverlayView';
 import { FrameData } from 'scandit-datacapture-frameworks-core';
 import { NavigationProp, ParamListBase } from '@react-navigation/native';
@@ -23,6 +23,7 @@ interface LabelCaptureViewProps {
     zoomSwitchControl?: ZoomSwitchControl | null;
     useValidationFlow: boolean;
     validationFlowSettings?: LabelCaptureValidationFlowSettings | null;
+    shouldHandleKeyboardInsetsInternally?: boolean;
     style: StyleProp<ViewStyle>;
     navigation?: NavigationProp<ParamListBase>;
     didUpdateSession?(labelCapture: LabelCapture, session: LabelCaptureSession, getFrameData: () => Promise<FrameData>): void;
@@ -36,6 +37,8 @@ interface LabelCaptureViewProps {
     brushForLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): Brush | null;
     didTapLabel?(overlay: LabelCaptureBasicOverlay, label: CapturedLabel): void;
     didCaptureLabelWithFields?(fields: LabelField[]): void;
+    didSubmitManualInputForField?(field: LabelField): void;
+    didUpdateValidationFlowResult?(type: LabelResultUpdateType, asyncId: number, fields: LabelField[], getFrameData: () => Promise<FrameData | null>): Promise<void>;
 }
 export declare const LabelCaptureView: React.ForwardRefExoticComponent<LabelCaptureViewProps & React.RefAttributes<DataCaptureView>>;
 export {};
