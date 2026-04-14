@@ -1,17 +1,18 @@
 {
   "name": "scandit-react-native-datacapture-label",
-  "version": "6.28.9",
+  "version": "8.3.1",
   "description": "Scandit Data Capture SDK for React Native",
   "homepage": "https://github.com/Scandit/scandit-react-native-datacapture-label",
   "main": "dist/index.js",
   "types": "dist/dts/index.d.ts",
+  "flow": "dist/index.js.flow",
   "scripts": {
-    "test": "yarn lint",
-    "lint": "tslint --project .",
-    "build": "npm run rollup",
-    "rollup": "rollup -c rollup.config.js --bundleConfigAsCjs",
-    "start": "yarn build -- --watch",
-    "clean": "../scripts/clean_package.py label"
+    "build": "rollup -c ../../rollup.config.js --bundleConfigAsCjs",
+    "generate-flow": "flowgen dist/dts/index.d.ts -o dist/index.js.flow",
+    "jest": "jest",
+    "coverage": "jest --coverage",
+    "test": "pnpm lint",
+    "lint": "eslint ts"
   },
   "keywords": [
     "scandit",
@@ -24,21 +25,51 @@
   "license": "Apache-2.0",
   "peerDependencies": {
     "react": ">=16.8.1",
-    "react-native": ">=0.60.0-rc.0 <1.0.x"
+    "react-native": ">=0.70.0 <1.0.x"
   },
   "devDependencies": {
-    "tslint": "^6.1.2",
-    "typescript": "4.9.5",
-    "rollup": "3.29.2",
+    "@babel/core": "^7.27.1",
+    "@babel/plugin-transform-flow-strip-types": "^7.27.1",
+    "@babel/plugin-transform-typescript": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-react": "^7.27.1",
+    "@babel/preset-typescript": "^7.27.1",
+    "@babel/runtime": "^7.27.1",
+    "@jest/globals": "^29.7.0",
+    "@react-native/babel-preset": "^0.79.2",
+    "@rollup/plugin-commonjs": "25.0.4",
     "@rollup/plugin-node-resolve": "15.2.1",
     "@rollup/plugin-typescript": "11.1.3",
-    "@rollup/plugin-commonjs": "25.0.4",
-    "rollup-plugin-modify": "3.0.0"
+    "@types/react": "19.1.4",
+    "babel-jest": "^29.7.0",
+    "flowgen": "^1.21.0",
+    "jest": "^29.7.0",
+    "rollup": "3.29.2",
+    "ts-jest": "^29.3.3",
+    "typescript": "4.9.5"
   },
   "dependencies": {
-    "scandit-react-native-datacapture-core": "6.28.9",
-    "scandit-react-native-datacapture-barcode": "6.28.9",
-    "scandit-datacapture-frameworks-barcode": "6.28.9",
-    "scandit-datacapture-frameworks-core": "6.28.9"
+    "scandit-react-native-datacapture-core": "8.3.1",
+    "scandit-react-native-datacapture-barcode": "8.3.1",
+    "scandit-datacapture-frameworks-barcode": "8.3.1",
+    "scandit-datacapture-frameworks-core": "8.3.1",
+    "scandit-datacapture-frameworks-label": "8.3.1"
+  },
+  "packageManager": "pnpm@10.15.0",
+  "codegenConfig": {
+    "name": "ScanditReactNativeDatacaptureLabelSpec",
+    "type": "modules",
+    "jsSrcsDir": ".",
+    "outputDir": {
+      "ios": "ios/generated",
+      "android": "android/generated"
+    },
+    "includesGeneratedCode": true,
+    "android": {
+      "javaPackageName": "com.scandit.datacapture.reactnative.label"
+    },
+    "ios": {
+      "unstableRequiresMainQueueSetup": true
+    }
   }
 }
