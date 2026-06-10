@@ -6,28 +6,31 @@
 
 package com.scandit.datacapture.reactnative.label
 
+import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
-import com.scandit.datacapture.frameworks.core.locator.DefaultServiceLocator
-import com.scandit.datacapture.reactnative.core.ScanditReactPackageBase
+import com.scandit.datacapture.frameworks.label.LabelCaptureModule
+import com.scandit.datacapture.reactnative.core.utils.ReactNativeEventEmitter
 
-class ScanditDataCaptureLabelPackage : ScanditReactPackageBase() {
-    private val serviceLocator = DefaultServiceLocator.getInstance()
-
+class ScanditDataCaptureLabelPackage : ReactPackage {
     override fun createNativeModules(
         reactContext: ReactApplicationContext
-    ): MutableList<NativeModule> {
-        // Module sets up its own LabelCaptureModule in init
-        return mutableListOf(
-            ScanditDataCaptureLabelModule(reactContext, serviceLocator)
+    ): MutableList<NativeModule> = mutableListOf(
+        ScanditDataCaptureLabelModule(
+            reactContext,
+            getLabelCaptureModule(reactContext)
         )
-    }
+    )
 
     override fun createViewManagers(
         reactContext: ReactApplicationContext
     ): MutableList<ViewManager<*, *>> = mutableListOf()
 
-    override fun getModuleClasses(): List<Class<out NativeModule>> =
-        listOf(ScanditDataCaptureLabelModule::class.java)
+    private fun getLabelCaptureModule(reactContext: ReactApplicationContext): LabelCaptureModule {
+        val emitter = ReactNativeEventEmitter(reactContext)
+        return LabelCaptureModule.create(emitter).also {
+            it.onCreate(reactContext)
+        }
+    }
 }
