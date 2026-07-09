@@ -75,3 +75,5 @@ declare export {
 } from "scandit-datacapture-frameworks-label";
 declare export * from "./LabelCaptureAdvancedOverlayView";
 declare export * from "./LabelCaptureView";
+import * as _internal from "./private/internal";
+declare export { _internal };

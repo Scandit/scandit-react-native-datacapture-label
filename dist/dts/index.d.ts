@@ -13,3 +13,5 @@ export { AdaptiveRecognitionMode, AdaptiveRecognitionResult, AdaptiveRecognition
 export { LabelCaptureAdaptiveRecognitionOverlay, LabelCaptureAdaptiveRecognitionListener, LabelCaptureAdaptiveRecognitionSettings } from 'scandit-datacapture-frameworks-label';
 export * from './LabelCaptureAdvancedOverlayView';
 export * from './LabelCaptureView';
+import * as _internal from './private/internal';
+export { _internal };
