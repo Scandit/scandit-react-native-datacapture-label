@@ -2,12 +2,14 @@ export { LabelCapture, LabelCaptureFeedback } from 'scandit-datacapture-framewor
 export { LabelCaptureBasicOverlay, LabelCaptureBasicOverlayListener } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureAdvancedOverlay, LabelCaptureAdvancedOverlayListener } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureListener } from 'scandit-datacapture-frameworks-label';
-export { LabelFieldType, LabelFieldState, CapturedLabel, LabelField, LabelCaptureSession } from 'scandit-datacapture-frameworks-label';
+export { LabelFieldType, LabelFieldState, LabelFieldValueType, CapturedLabel, LabelField, LabelCaptureSession } from 'scandit-datacapture-frameworks-label';
 export { LabelCaptureSettings } from 'scandit-datacapture-frameworks-label';
 export { LabelDefinition, LabelFieldDefinition } from 'scandit-datacapture-frameworks-label';
 export { LabelFieldLocation, LabelFieldLocationType } from 'scandit-datacapture-frameworks-label';
-export { BarcodeField, TextField, CustomBarcode, CustomText, SerialNumberBarcode, PartNumberBarcode, ImeiOneBarcode, ImeiTwoBarcode, UnitPriceText, TotalPriceText, WeightText, PackingDateText, ExpiryDateText } from 'scandit-datacapture-frameworks-label';
+export { BarcodeField, TextField, CustomBarcode, CustomText, DateText, SerialNumberBarcode, PartNumberBarcode, ImeiOneBarcode, ImeiTwoBarcode, UnitPriceText, TotalPriceText, WeightText, PackingDateText, ExpiryDateText } from 'scandit-datacapture-frameworks-label';
 export { LabelDateFormat, LabelDateResult, LabelDateComponentFormat } from 'scandit-datacapture-frameworks-label';
-export { LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowListener, LabelCaptureValidationFlowSettings } from 'scandit-datacapture-frameworks-label';
+export { LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowListener, LabelCaptureValidationFlowSettings, LabelResultUpdateType } from 'scandit-datacapture-frameworks-label';
+export { AdaptiveRecognitionMode, AdaptiveRecognitionResult, AdaptiveRecognitionResultType, ReceiptScanningResult, ReceiptScanningLineItem } from 'scandit-datacapture-frameworks-label';
+export { LabelCaptureAdaptiveRecognitionOverlay, LabelCaptureAdaptiveRecognitionListener, LabelCaptureAdaptiveRecognitionSettings } from 'scandit-datacapture-frameworks-label';
 export * from './LabelCaptureAdvancedOverlayView';
 export * from './LabelCaptureView';
