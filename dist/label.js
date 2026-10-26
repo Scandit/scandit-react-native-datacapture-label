@@ -1217,6 +1217,9 @@ class LabelCaptureController extends BaseController {
             if (this.mode.listeners.length > 0) {
                 yield this.subscribeLabelCaptureListener();
             }
+            // Native ignores the mode JSON's feedback key, so the stored feedback must be flushed once the mode is attached.
+            // Non-fatal: a failed flush must not break the mode attachment.
+            yield this.updateFeedback(this.mode.feedback).catch(error => console.error('LabelCaptureController: failed to flush feedback on mode attachment:', error));
         });
     }
     handleDidUpdateSessionEvent(ev) {
@@ -1804,6 +1807,12 @@ __decorate([
 ], LabelCaptureAdvancedOverlay.prototype, "_shouldShowScanAreaGuides", void 0);
 
 class LabelCaptureSettings extends DefaultSerializeable {
+    get locationSelection() {
+        return this._locationSelection;
+    }
+    set locationSelection(newValue) {
+        this._locationSelection = newValue;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     static fromJSON(json) {
         // tslint:disable-next-line:no-console
@@ -1823,6 +1832,7 @@ class LabelCaptureSettings extends DefaultSerializeable {
     constructor() {
         super();
         this._definitions = [];
+        this._locationSelection = null;
         this.properties = {};
     }
     settingsForSymbology(symbology) {
@@ -1838,6 +1848,9 @@ class LabelCaptureSettings extends DefaultSerializeable {
 __decorate([
     nameForSerialization('labelDefinitions')
 ], LabelCaptureSettings.prototype, "_definitions", void 0);
+__decorate([
+    nameForSerialization('locationSelection')
+], LabelCaptureSettings.prototype, "_locationSelection", void 0);
 __decorate([
     ignoreFromSerialization
 ], LabelCaptureSettings, "barcodeDefaults", null);
@@ -2078,6 +2091,9 @@ class PackingDateText extends TextField {
     get anchorRegexes() {
         var _a;
         return (_a = this._anchorRegexes) !== null && _a !== void 0 ? _a : [];
+    }
+    set anchorRegexes(value) {
+        this._anchorRegexes = value;
     }
     get labelDateFormat() {
         return this._labelDateFormat;
