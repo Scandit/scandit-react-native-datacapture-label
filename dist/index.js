@@ -1,4 +1,4 @@
-import { setLabelCaptureDefaultsLoader, LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, LabelCaptureAdaptiveRecognitionOverlay, registerLabelProxies, loadLabelCaptureDefaults, getLabelCaptureDefaults } from './label.js';
+import { setLabelCaptureDefaultsLoader, LabelCaptureSettings, LabelCapture, LabelCaptureBasicOverlay, LabelCaptureAdvancedOverlay, LabelCaptureValidationFlowOverlay, registerLabelProxies, loadLabelCaptureDefaults } from './label.js';
 export { AdaptiveRecognitionMode, AdaptiveRecognitionResult, AdaptiveRecognitionResultType, BarcodeField, CapturedLabel, CustomBarcode, CustomText, DateText, ExpiryDateText, ImeiOneBarcode, ImeiTwoBarcode, LabelCapture, LabelCaptureAdaptiveRecognitionOverlay, LabelCaptureAdaptiveRecognitionSettings, LabelCaptureAdvancedOverlay, LabelCaptureBasicOverlay, LabelCaptureFeedback, LabelCaptureSession, LabelCaptureSettings, LabelCaptureValidationFlowOverlay, LabelCaptureValidationFlowSettings, LabelDateComponentFormat, LabelDateFormat, LabelDateResult, LabelDefinition, LabelField, LabelFieldDefinition, LabelFieldLocation, LabelFieldLocationType, LabelFieldState, LabelFieldType, LabelFieldValueType, LabelResultUpdateType, PackingDateText, PartNumberBarcode, ReceiptScanningLineItem, ReceiptScanningResult, SerialNumberBarcode, TextField, TotalPriceText, UnitPriceText, WeightText } from './label.js';
 import { CameraPosition, FrameSourceState, DataCaptureView, _internal, initCoreProxy, initCoreDefaults, getModuleDefaults, getNativeModule, createRNNativeCaller } from 'scandit-react-native-datacapture-core';
 import React, { forwardRef, useRef, useState, useMemo, useCallback, useEffect, useImperativeHandle } from 'react';
@@ -516,41 +516,20 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
     const basicOverlayPredictedFieldBrush = _internal.useStableProp(props.basicOverlay?.predictedFieldBrush);
     const basicOverlayViewfinder = _internal.useStableProp(props.basicOverlay?.viewfinder);
     const validationFlowSettings = _internal.useStableProp(props.validationFlowOverlay?.settings);
-    const adaptiveRecognitionSettings = _internal.useStableProp(props.adaptiveRecognitionOverlay?.settings);
-    const feedback = _internal.useStableProp(props.feedback);
     const context = _internal.useDataCaptureContextInternal();
-    // Shared claim: coexists with any other provider-camera view, coalesced
-    // by the coordinator into a single ON/OFF as views come and go.
-    const [cameraActive, setCameraActive] = useState(false);
     const viewHandle = _internal.useViewHandle();
-    const cameraClaim = _internal.useCameraClaim({
-        mode: 'shared',
-        active: cameraActive,
-        nativeViewRef: viewHandle.mutableRef,
-    });
     const viewRef = viewHandle.mutableRef;
     const viewId = viewHandle.id;
     const resolveSettings = useCallback(() => buildSettings(labelCaptureSettings, labelDefinitions), [labelCaptureSettings, labelDefinitions]);
-    // ─── Mutual-exclusion gate (adaptive recognition vs validation flow vs advanced) ──
-    // Precedence: adaptive recognition (receipt scanning) > validation flow >
-    // advanced overlay. When a higher-precedence overlay is configured, the
-    // lower-precedence ones are skipped with a warning. (Matches the legacy
-    // `useValidationFlow=true` precedence and the Flutter overlay setup.)
-    const adaptiveRecognitionConfigured = props.adaptiveRecognitionOverlay !== undefined;
+    // ─── Mutual-exclusion gate (advanced vs validation flow) ──────────────────
+    // If both prop groups are supplied, prefer the validation flow (matches the
+    // legacy `useValidationFlow=true` precedence) and skip the advanced overlay.
     const validationFlowConfigured = props.validationFlowOverlay !== undefined;
     const advancedOverlayConfigured = props.advancedOverlay !== undefined;
-    // Warn once per configuration change (an effect, not render-time) so a
-    // frequently re-rendering parent doesn't spam the console.
-    useEffect(() => {
-        if (adaptiveRecognitionConfigured && (validationFlowConfigured || advancedOverlayConfigured)) {
-            console.warn('LabelCaptureView: `adaptiveRecognitionOverlay` is mutually exclusive with ' +
-                '`validationFlowOverlay` and `advancedOverlay`; ignoring those.');
-        }
-        else if (validationFlowConfigured && advancedOverlayConfigured) {
-            console.warn('LabelCaptureView: `advancedOverlay` and `validationFlowOverlay` are mutually exclusive; ' +
-                'ignoring `advancedOverlay`.');
-        }
-    }, [adaptiveRecognitionConfigured, validationFlowConfigured, advancedOverlayConfigured]);
+    if (validationFlowConfigured && advancedOverlayConfigured) {
+        console.warn('LabelCaptureView: `advancedOverlay` and `validationFlowOverlay` are mutually exclusive; ' +
+            'ignoring `advancedOverlay`.');
+    }
     // ─── Overlays ─────────────────────────────────────────────────────────────
     const basicOverlay = _internal.useOverlay({
         view: viewRef,
@@ -585,12 +564,8 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
     const advancedOverlay = _internal.useOverlay({
         view: viewRef,
         // Advanced overlay is off by default; opt in by passing the prop.
-        // Skipped when validation flow or adaptive recognition is also
-        // configured (mutual exclusion).
-        enabled: advancedOverlayConfigured &&
-            !validationFlowConfigured &&
-            !adaptiveRecognitionConfigured &&
-            props.advancedOverlay.enabled !== false,
+        // Skipped when validation flow is also configured (mutual exclusion).
+        enabled: advancedOverlayConfigured && !validationFlowConfigured && props.advancedOverlay.enabled !== false,
         factory: () => new LabelCaptureAdvancedOverlay(getMode()),
         factoryDeps: [],
         update: overlay => {
@@ -602,7 +577,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
     });
     const validationFlowOverlay = _internal.useOverlay({
         view: viewRef,
-        enabled: validationFlowConfigured && !adaptiveRecognitionConfigured && props.validationFlowOverlay.enabled !== false,
+        enabled: validationFlowConfigured && props.validationFlowOverlay.enabled !== false,
         factory: () => new LabelCaptureValidationFlowOverlay(getMode()),
         factoryDeps: [],
         update: overlay => {
@@ -616,21 +591,9 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
         },
         updateDeps: [validationFlowSettings, props.validationFlowOverlay?.shouldHandleKeyboardInsetsInternally],
     });
-    const adaptiveRecognitionOverlay = _internal.useOverlay({
-        view: viewRef,
-        enabled: adaptiveRecognitionConfigured && props.adaptiveRecognitionOverlay.enabled !== false,
-        factory: () => new LabelCaptureAdaptiveRecognitionOverlay(getMode()),
-        factoryDeps: [],
-        update: overlay => {
-            if (adaptiveRecognitionSettings) {
-                void overlay.applySettings(adaptiveRecognitionSettings);
-            }
-        },
-        updateDeps: [adaptiveRecognitionSettings],
-    });
     // ─── Mode ─────────────────────────────────────────────────────────────────
-    const { getMode, attach: attachMode, detach: detachMode, } = _internal.useMode({
-        disabled: props.disabled,
+    const { getMode } = _internal.useMode({
+        state: props.state ?? 'enabled',
         createMode: () => {
             const mode = new LabelCapture(resolveSettings());
             // `parentId` links the mode to its DataCaptureView for native serialization.
@@ -643,51 +606,20 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
                 mode.isEnabled = enabled;
         },
         attach: mode => context.addMode(mode),
-        // Quiesce the shared camera while the mode is removed — removing it with
-        // frames still streaming aborts natively in the engine.
         detach: mode => context.removeMode(mode),
-        attachables: [basicOverlay, advancedOverlay, validationFlowOverlay, adaptiveRecognitionOverlay],
+        attachables: [basicOverlay, advancedOverlay, validationFlowOverlay],
         settingsDeps: [resolveSettings],
     });
-    // Enable/disable scanning, shared by the navigation prop and the imperative
-    // `enable()`/`disable()` handle. Focus *attaches* (adds the mode to the shared
-    // context) and blur *detaches* (removes it): the native context is
-    // single-active-mode and `addMode` of a non-coexisting mode silently evicts
-    // this one, so re-adding on focus keeps it the active mode and re-registers
-    // its listener. Just toggling `isEnabled` is not enough.
-    const enable = useCallback(async () => {
-        await attachMode();
-        setCameraActive(true);
-        await cameraClaim.granted();
-    }, [attachMode, cameraClaim]);
-    const disable = useCallback(async () => {
-        setCameraActive(false);
-        await detachMode();
-    }, [detachMode]);
-    // Lifecycle: focus/blur + app foreground/background + the `disabled` veto.
-    _internal.useLifecycleHook({
-        navigation: props.navigation,
-        disabled: props.disabled,
-        appStateHandlingDisabled: props.appStateHandlingDisabled,
-        onEnable: enable,
-        onDisable: disable,
-    });
-    // ─── Feedback ─────────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (feedback === undefined)
-            return;
-        getMode().feedback = feedback;
-    }, [feedback, getMode]);
     // ─── Mode listener ────────────────────────────────────────────────────────
     _internal.useModeListener({
         mode: getMode(),
         listenerFns: {
-            didUpdateSession: props.didScan || props.didUpdateSession
+            didUpdateSession: props.onCapture || props.onUpdateSession
                 ? async (_mode, session, getFD) => {
-                    if (props.didUpdateSession)
-                        await props.didUpdateSession(session, getFD);
-                    if (props.didScan && session.capturedLabels?.length) {
-                        await props.didScan(session.capturedLabels, session, getFD);
+                    if (props.onUpdateSession)
+                        await props.onUpdateSession(session, getFD);
+                    if (props.onCapture && session.capturedLabels?.length) {
+                        await props.onCapture(session.capturedLabels, session, getFD);
                     }
                 }
                 : undefined,
@@ -777,34 +709,10 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
             overlay.listener = null;
         },
     });
-    // ─── Adaptive-recognition overlay listener ────────────────────────────────
-    // The shared `LabelCaptureAdaptiveRecognitionListener` declares its methods
-    // as non-optional; we pass a partial object (only-defined keys reach the
-    // proxy) and cast at the boundary, matching the validation-flow pattern.
-    _internal.useModeListener({
-        mode: adaptiveRecognitionOverlay.overlay,
-        listenerFns: {
-            didRecognize: props.adaptiveRecognitionOverlay?.didRecognize
-                ? (result) => props.adaptiveRecognitionOverlay.didRecognize(result)
-                : undefined,
-            didFail: props.adaptiveRecognitionOverlay?.didFail
-                ? () => props.adaptiveRecognitionOverlay.didFail()
-                : undefined,
-        },
-        addListener: (overlay, l) => {
-            overlay.listener = l;
-        },
-        removeListener: overlay => {
-            overlay.listener = null;
-        },
-    });
     // ─── Imperative handle ────────────────────────────────────────────────────
     const basicOverlayEnabled = props.basicOverlay?.enabled !== false;
-    const advancedOverlayEnabled = advancedOverlayConfigured &&
-        !validationFlowConfigured &&
-        !adaptiveRecognitionConfigured &&
-        props.advancedOverlay.enabled !== false;
-    const validationFlowOverlayEnabled = validationFlowConfigured && !adaptiveRecognitionConfigured && props.validationFlowOverlay.enabled !== false;
+    const advancedOverlayEnabled = advancedOverlayConfigured && !validationFlowConfigured && props.advancedOverlay.enabled !== false;
+    const validationFlowOverlayEnabled = validationFlowConfigured && props.validationFlowOverlay.enabled !== false;
     useImperativeHandle(ref, () => ({
         // LabelCapture has no `reset()` on the shared API; the handle method is
         // kept for parity with other capture views and is currently a no-op.
@@ -834,8 +742,6 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
                 applySettings: settings => validationFlowOverlay.getOverlay()?.applySettings(settings) ?? Promise.resolve(),
             }
             : undefined,
-        enable,
-        disable,
     }), [
         getMode,
         basicOverlay,
@@ -844,10 +750,8 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
         basicOverlayEnabled,
         advancedOverlayEnabled,
         validationFlowOverlayEnabled,
-        enable,
-        disable,
     ]);
-    return (React.createElement(DataCaptureView, { context: context, parentId: viewId, style: props.style ?? { flex: 1 }, ref: viewHandle.ref, onNativeDispose: teardown => cameraClaim.release(teardown) }));
+    return (React.createElement(DataCaptureView, { context: context, parentId: viewId, style: props.style ?? { flex: 1 }, ref: viewHandle.ref }));
 });
 
 // Internal-only exports for AIO views and other not-yet-public APIs.
@@ -855,8 +759,7 @@ const LabelCaptureView = forwardRef(function LabelCaptureView(props, ref) {
 
 var internal = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    LabelCaptureView: LabelCaptureView,
-    getLabelCaptureDefaults: getLabelCaptureDefaults
+    LabelCaptureView: LabelCaptureView
 });
 
 initLabelDefaults();
