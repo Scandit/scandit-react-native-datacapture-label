@@ -25,13 +25,13 @@ class ScanditDataCaptureLabelModuleBase(
 ) {
     companion object {
         const val NAME = "ScanditDataCaptureLabel"
-        private const val DEFAULTS_KEY = "Defaults"
+        private const val DYNAMIC_DEFAULTS_KEY = "DynamicDefaults"
         private const val LABEL_CAPTURE_KEY = "LabelCapture"
     }
 
     fun getDefaults(): MutableMap<String, Any> = mutableMapOf(
-        DEFAULTS_KEY to mapOf(
-            LABEL_CAPTURE_KEY to labelCaptureModule.getDefaults()
+        DYNAMIC_DEFAULTS_KEY to mapOf(
+            LABEL_CAPTURE_KEY to labelCaptureModule.getDynamicDefaults()
         )
     )
 

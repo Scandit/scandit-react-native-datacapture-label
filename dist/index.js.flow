@@ -4,76 +4,562 @@
  * Flowgen v1.21.0
  */
 
-declare export {
-  LabelCapture,
-  LabelCaptureFeedback,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelCaptureBasicOverlay,
-  LabelCaptureBasicOverlayListener,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelCaptureAdvancedOverlay,
-  LabelCaptureAdvancedOverlayListener,
-} from "scandit-datacapture-frameworks-label";
-declare export { LabelCaptureListener } from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelFieldType,
-  LabelFieldState,
-  LabelFieldValueType,
+import {
   CapturedLabel,
   LabelField,
-  LabelCaptureSession,
-} from "scandit-datacapture-frameworks-label";
-declare export { LabelCaptureSettings } from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelDefinition,
-  LabelFieldDefinition,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelFieldLocation,
-  LabelFieldLocationType,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  BarcodeField,
-  TextField,
-  CustomBarcode,
-  CustomText,
-  DateText,
-  SerialNumberBarcode,
-  PartNumberBarcode,
-  ImeiOneBarcode,
-  ImeiTwoBarcode,
-  UnitPriceText,
-  TotalPriceText,
-  WeightText,
-  PackingDateText,
-  ExpiryDateText,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelDateFormat,
-  LabelDateResult,
-  LabelDateComponentFormat,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelCaptureValidationFlowOverlay,
-  LabelCaptureValidationFlowListener,
   LabelCaptureValidationFlowSettings,
   LabelResultUpdateType,
-} from "scandit-datacapture-frameworks-label";
+  LabelCaptureAdaptiveRecognitionSettings,
+  AdaptiveRecognitionResult,
+  LabelDefinition,
+  LabelCaptureSettings,
+  LabelCaptureSession,
+  LabelCaptureFeedback,
+  getLabelCaptureDefaults,
+} from "./label";
+import type { LabelCaptureDefaults } from "./label";
 declare export {
   AdaptiveRecognitionMode,
   AdaptiveRecognitionResult,
   AdaptiveRecognitionResultType,
-  ReceiptScanningResult,
-  ReceiptScanningLineItem,
-} from "scandit-datacapture-frameworks-label";
-declare export {
-  LabelCaptureAdaptiveRecognitionOverlay,
+  BarcodeField,
+  CapturedLabel,
+  CustomBarcode,
+  CustomText,
+  DateText,
+  ExpiryDateText,
+  ImeiOneBarcode,
+  ImeiTwoBarcode,
+  LabelCapture,
   LabelCaptureAdaptiveRecognitionListener,
+  LabelCaptureAdaptiveRecognitionOverlay,
   LabelCaptureAdaptiveRecognitionSettings,
-} from "scandit-datacapture-frameworks-label";
-declare export * from "./LabelCaptureAdvancedOverlayView";
-declare export * from "./LabelCaptureView";
-import * as _internal from "./private/internal";
-declare export { _internal };
+  LabelCaptureAdvancedOverlay,
+  LabelCaptureAdvancedOverlayListener,
+  LabelCaptureBasicOverlay,
+  LabelCaptureBasicOverlayListener,
+  LabelCaptureFeedback,
+  LabelCaptureListener,
+  LabelCaptureSession,
+  LabelCaptureSettings,
+  LabelCaptureValidationFlowListener,
+  LabelCaptureValidationFlowOverlay,
+  LabelCaptureValidationFlowSettings,
+  LabelDateComponentFormat,
+  LabelDateFormat,
+  LabelDateResult,
+  LabelDefinition,
+  LabelField,
+  LabelFieldDefinition,
+  LabelFieldLocation,
+  LabelFieldLocationType,
+  LabelFieldState,
+  LabelFieldType,
+  LabelFieldValueType,
+  LabelResultUpdateType,
+  PackingDateText,
+  PartNumberBarcode,
+  ReceiptScanningLineItem,
+  ReceiptScanningResult,
+  SerialNumberBarcode,
+  TextField,
+  TotalPriceText,
+  UnitPriceText,
+  WeightText,
+} from "./label";
+import React from "react";
+import {
+  DefaultSerializeable,
+  FrameData,
+} from "scandit-react-native-datacapture-core/dist/core";
+import { StyleProp, ViewStyle } from "react-native";
+import {
+  Brush,
+  Viewfinder,
+  Anchor,
+  PointWithUnit,
+} from "scandit-react-native-datacapture-core";
+import type { ScanditNavigationProp } from "scandit-react-native-datacapture-core";
+
+/**
+ * [object Object],[object Object],[object Object],[object Object],[object Object]
+ * @since 6.17.0
+ */
+declare class LabelCaptureAdvancedOverlayView
+  mixins React.Component, DefaultSerializeable
+{
+  /**
+   * @since 6.17.0
+   */
+  static moduleName: string;
+  toJSON(): { [key: string]: any };
+  moduleName: string;
+}
+/**
+ * [object Object],[object Object],[object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioBasicOverlayProps {
+  /**
+   * Whether to attach the basic overlay at all. Defaults to *true*; pass *false* to render the camera preview without it.
+   * @since 8.7.0
+   */
+  enabled?: boolean;
+
+  /**
+   * Default brush applied to every captured label.
+   * @since 8.7.0
+   */
+  labelBrush?: Brush | null;
+
+  /**
+   * Brush applied to captured — that is, confirmed — fields.
+   * @since 8.7.0
+   */
+  capturedFieldBrush?: Brush | null;
+
+  /**
+   * Brush applied to predicted fields.
+   * @since 8.7.0
+   */
+  predictedFieldBrush?: Brush | null;
+
+  /**
+   * Whether the overlay renders scan-area guides.
+   * @since 8.7.0
+   */
+  shouldShowScanAreaGuides?: boolean;
+
+  /**
+   * The viewfinder drawn by the basic overlay.
+   * @since 8.7.0
+   */
+  viewfinder?: Viewfinder | null;
+
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  brushForLabel?: (label: CapturedLabel) => Brush | null;
+
+  /**
+   * Per-field brush override. Return *null* to fall back to the captured- or predicted-field brush.
+   * @since 8.7.0
+   */
+  brushForFieldOfLabel?: (
+    field: LabelField,
+    label: CapturedLabel
+  ) => Brush | null;
+
+  /**
+   * Called when the user taps a captured label.
+   * @since 8.7.0
+   */
+  didTapLabel?: (label: CapturedLabel) => void;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioAdvancedOverlayProps {
+  /**
+   * Whether to attach the advanced overlay. Defaults to *true* when the prop is supplied.
+   * @since 8.7.0
+   */
+  enabled?: boolean;
+
+  /**
+   * Whether the overlay renders scan-area guides.
+   * @since 8.7.0
+   */
+  shouldShowScanAreaGuides?: boolean;
+
+  /**
+   * Returns the view to draw for a captured label, or *null* to draw nothing.
+   * @since 8.7.0
+   */
+  viewForCapturedLabel?: (
+    label: CapturedLabel
+  ) => LabelCaptureAdvancedOverlayView | null;
+
+  /**
+   * Returns the anchor point of the view drawn for a captured label.
+   * @since 8.7.0
+   */
+  anchorForCapturedLabel?: (label: CapturedLabel) => Anchor;
+
+  /**
+   * Returns the offset applied to the view drawn for a captured label.
+   * @since 8.7.0
+   */
+  offsetForCapturedLabel?: (label: CapturedLabel) => PointWithUnit;
+
+  /**
+   * Returns the view to draw for a captured label field, or *null* to draw nothing.
+   * @since 8.7.0
+   */
+  viewForCapturedLabelField?: (
+    field: LabelField
+  ) => LabelCaptureAdvancedOverlayView | null;
+
+  /**
+   * Returns the anchor point of the view drawn for a captured label field.
+   * @since 8.7.0
+   */
+  anchorForCapturedLabelField?: (field: LabelField) => Anchor;
+
+  /**
+   * Returns the offset applied to the view drawn for a captured label field.
+   * @since 8.7.0
+   */
+  offsetForCapturedLabelField?: (field: LabelField) => PointWithUnit;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioValidationFlowOverlayProps {
+  /**
+   * Whether to attach the validation-flow overlay. Defaults to *true* when the prop is supplied.
+   * @since 8.7.0
+   */
+  enabled?: boolean;
+
+  /**
+   * Settings applied to the validation-flow overlay.
+   * @since 8.7.0
+   */
+  settings?: LabelCaptureValidationFlowSettings | null;
+
+  /**
+   * Whether the overlay adjusts its own layout for the on-screen keyboard. Turn this off to handle keyboard insets in the application instead.
+   * @since 8.7.0
+   */
+  shouldHandleKeyboardInsetsInternally?: boolean;
+
+  /**
+   * Called when the validation flow completes with the given fields.
+   * @since 8.7.0
+   */
+  didCaptureLabelWithFields?: (fields: LabelField[]) => void;
+
+  /**
+   * Called when the user manually edits a field’s value in the validation flow, with the previous and the newly-submitted value.
+   * @since 8.7.0
+   */
+  didSubmitManualInputForField?: (
+    field: LabelField,
+    oldValue: string | null,
+    newValue: string
+  ) => void;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  didUpdateValidationFlowResult?: (
+    type: $Values<typeof LabelResultUpdateType>,
+    asyncId: number,
+    fields: LabelField[],
+    getFrameData: () => Promise<FrameData | null>
+  ) => Promise<void>;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioAdaptiveRecognitionOverlayProps {
+  /**
+   * Whether to attach the adaptive-recognition overlay. Defaults to *true* when the prop is supplied.
+   * @since 8.7.0
+   */
+  enabled?: boolean;
+
+  /**
+   * Settings applied to the adaptive-recognition overlay.
+   * @since 8.7.0
+   */
+  settings?: LabelCaptureAdaptiveRecognitionSettings | null;
+
+  /**
+   * Called when adaptive recognition produces a result.
+   * @since 8.7.0
+   */
+  didRecognize?: (result: AdaptiveRecognitionResult) => void;
+
+  /**
+   * Called when adaptive recognition fails to produce a result.
+   * @since 8.7.0
+   */
+  didFail?: () => void;
+}
+/**
+ * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioViewProps {
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  style?: StyleProp<ViewStyle>;
+
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  navigation?: ScanditNavigationProp;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  disabled?: boolean;
+
+  /**
+   * Turns off the automatic enabling and disabling of the mode in response to the application moving between foreground and background.
+   * @since 8.7.0
+   */
+  appStateHandlingDisabled?: boolean;
+
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  labelDefinitions?: LabelDefinition[];
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  labelCaptureSettings?: LabelCaptureSettings | null;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  didScan?: (
+    labels: CapturedLabel[],
+    session: LabelCaptureSession,
+    getFrameData: () => Promise<FrameData | null>
+  ) => void | Promise<void>;
+
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  didUpdateSession?: (
+    session: LabelCaptureSession,
+    getFrameData: () => Promise<FrameData | null>
+  ) => void | Promise<void>;
+
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  basicOverlay?: LabelCaptureAioBasicOverlayProps;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  advancedOverlay?: LabelCaptureAioAdvancedOverlayProps;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  validationFlowOverlay?: LabelCaptureAioValidationFlowOverlayProps;
+
+  /**
+   * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  adaptiveRecognitionOverlay?: LabelCaptureAioAdaptiveRecognitionOverlayProps;
+
+  /**
+   * Sound and vibration feedback emitted on capture. Omit to use the SDK default.
+   * @since 8.7.0
+   */
+  feedback?: LabelCaptureFeedback;
+}
+declare type LabelCaptureAioViewSettingsSource =
+  | {
+      labelDefinitions: LabelDefinition[],
+      ...
+    }
+  | {
+      labelCaptureSettings: LabelCaptureSettings,
+      ...
+    };
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioBasicOverlayHandle {
+  /**
+   * Overrides the brush used for a captured label.
+   * @since 8.7.0
+   */
+  setBrushForLabel(brush: Brush, label: CapturedLabel): Promise<void>;
+
+  /**
+   * Overrides the brush used for a field of a captured label.
+   * @since 8.7.0
+   */
+  setBrushForFieldOfLabel(
+    brush: Brush,
+    field: LabelField,
+    label: CapturedLabel
+  ): Promise<void>;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioAdvancedOverlayHandle {
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  setViewForCapturedLabel(
+    label: CapturedLabel,
+    view: LabelCaptureAdvancedOverlayView | null
+  ): Promise<void>;
+
+  /**
+   * Sets the anchor point of the view drawn for a captured label.
+   * @since 8.7.0
+   */
+  setAnchorForCapturedLabel(
+    label: CapturedLabel,
+    anchor: Anchor
+  ): Promise<void>;
+
+  /**
+   * Sets the offset applied to the view drawn for a captured label.
+   * @since 8.7.0
+   */
+  setOffsetForCapturedLabel(
+    label: CapturedLabel,
+    offset: PointWithUnit
+  ): Promise<void>;
+
+  /**
+   * Sets the view drawn for a field of a captured label.
+   * @since 8.7.0
+   */
+  setViewForCapturedLabelField(
+    field: LabelField,
+    label: CapturedLabel,
+    view: LabelCaptureAdvancedOverlayView | null
+  ): Promise<void>;
+
+  /**
+   * Sets the anchor point of the view drawn for a field of a captured label.
+   * @since 8.7.0
+   */
+  setAnchorForCapturedLabelField(
+    field: LabelField,
+    label: CapturedLabel,
+    anchor: Anchor
+  ): Promise<void>;
+
+  /**
+   * Sets the offset applied to the view drawn for a field of a captured label.
+   * @since 8.7.0
+   */
+  setOffsetForCapturedLabelField(
+    field: LabelField,
+    label: CapturedLabel,
+    offset: PointWithUnit
+  ): Promise<void>;
+
+  /**
+   * Removes every view currently drawn by the advanced overlay.
+   * @since 8.7.0
+   */
+  clearCapturedLabelViews(): Promise<void>;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioValidationFlowOverlayHandle {
+  /**
+   * Applies new settings to the validation-flow overlay.
+   * @since 8.7.0
+   */
+  applySettings(settings: LabelCaptureValidationFlowSettings): Promise<void>;
+}
+/**
+ * [object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare interface LabelCaptureAioViewHandle {
+  /**
+   * [object Object],[object Object],[object Object]
+   * @since 8.7.0
+   */
+  reset(): Promise<void>;
+
+  /**
+   * Turns scanning on now: enables the mode and turns the camera on. Automatic navigation and application-state handling may subsequently turn it off again.
+   * @since 8.7.0
+   */
+  enable(): Promise<void>;
+
+  /**
+   * Turns scanning off now: disables the mode and turns the camera off.
+   * @since 8.7.0
+   */
+  disable(): Promise<void>;
+
+  /**
+   * Operations on the basic overlay. Omitted when the basic overlay is disabled.
+   * @since 8.7.0
+   */
+  basicOverlay?: LabelCaptureAioBasicOverlayHandle;
+
+  /**
+   * Operations on the advanced overlay. Omitted when the advanced overlay is not supplied or is disabled.
+   * @since 8.7.0
+   */
+  advancedOverlay?: LabelCaptureAioAdvancedOverlayHandle;
+
+  /**
+   * Operations on the validation-flow overlay. Omitted when the validation-flow overlay is not supplied or is disabled.
+   * @since 8.7.0
+   */
+  validationFlowOverlay?: LabelCaptureAioValidationFlowOverlayHandle;
+}
+/**
+ * [object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object],[object Object]
+ * @since 8.7.0
+ */
+declare var LabelCaptureAioView: React.ForwardRefExoticComponent<{
+  ...{ ...LabelCaptureAioViewProps, ...LabelCaptureAioViewSettingsSource },
+  ...React.RefAttributes<LabelCaptureAioViewHandle>,
+}>;
+declare var internal_d_LabelCaptureDefaults: typeof LabelCaptureDefaults;
+declare var internal_d_getLabelCaptureDefaults: typeof getLabelCaptureDefaults;
+declare export {
+  internal_d_LabelCaptureDefaults as LabelCaptureDefaults,
+  internal_d_getLabelCaptureDefaults as getLabelCaptureDefaults,
+};
+declare export {
+  LabelCaptureAdvancedOverlayView,
+  LabelCaptureAioView,
+  internal_d as _internal,
+};
+export type {
+  LabelCaptureAioAdaptiveRecognitionOverlayProps,
+  LabelCaptureAioAdvancedOverlayHandle,
+  LabelCaptureAioAdvancedOverlayProps,
+  LabelCaptureAioBasicOverlayHandle,
+  LabelCaptureAioBasicOverlayProps,
+  LabelCaptureAioValidationFlowOverlayHandle,
+  LabelCaptureAioValidationFlowOverlayProps,
+  LabelCaptureAioViewHandle,
+  LabelCaptureAioViewProps,
+};
