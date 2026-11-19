@@ -76,10 +76,7 @@ public class ScanditDataCaptureLabelImpl: NSObject {
             fatalError("Failed to create AdvancedOverlayViewCreator")
         }
         let viewResolver = ScanditDataCaptureBarcode.ReactViewFromJsonResolver(creator: viewCreator)
-        labelCaptureModule = LabelCaptureModule(
-            emitter: RegistryEmitter(platformEmitter: reactEmitter),
-            viewFromJsonResolver: viewResolver
-        )
+        labelCaptureModule = LabelCaptureModule(emitter: reactEmitter, viewFromJsonResolver: viewResolver)
         labelCaptureModule.didStart()
     }
 
@@ -93,8 +90,8 @@ public class ScanditDataCaptureLabelImpl: NSObject {
             return [:]
         }
         return [
-            "DynamicDefaults": [
-                "LabelCapture": module.getDynamicDefaults()
+            "Defaults": [
+                "LabelCapture": module.getDefaults()
             ]
         ]
     }

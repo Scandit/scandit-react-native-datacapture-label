@@ -41,7 +41,7 @@ namespace JS {
         using ResultT = Constants;
 
         struct Input {
-          RCTRequired<id<NSObject>> DynamicDefaults;
+          RCTRequired<id<NSObject>> Defaults;
         };
 
         /** Initialize with a set of values */
@@ -92,8 +92,8 @@ namespace facebook::react {
 } // namespace facebook::react
 inline JS::NativeScanditDataCaptureLabel::Constants::Builder::Builder(const Input i) : _factory(^{
   NSMutableDictionary *d = [NSMutableDictionary new];
-  auto DynamicDefaults = i.DynamicDefaults.get();
-  d[@"DynamicDefaults"] = DynamicDefaults;
+  auto Defaults = i.Defaults.get();
+  d[@"Defaults"] = Defaults;
   return d;
 }) {}
 inline JS::NativeScanditDataCaptureLabel::Constants::Builder::Builder(Constants i) : _factory(^{
