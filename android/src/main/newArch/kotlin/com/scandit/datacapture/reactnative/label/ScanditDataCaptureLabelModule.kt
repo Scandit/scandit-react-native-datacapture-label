@@ -12,6 +12,7 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.module.annotations.ReactModule
 import com.scandit.datacapture.frameworks.core.FrameworkModule
+import com.scandit.datacapture.frameworks.core.listeners.registry.RegistryEmitter
 import com.scandit.datacapture.frameworks.core.locator.ServiceLocator
 import com.scandit.datacapture.frameworks.label.LabelCaptureModule
 import com.scandit.datacapture.reactnative.core.utils.ReactNativeEventEmitter
@@ -29,7 +30,7 @@ class ScanditDataCaptureLabelModule(
         val emitter = ReactNativeEventEmitter { payload ->
             emitOnScanditEvent(payload)
         }
-        val labelCaptureModule = LabelCaptureModule.create(emitter).also {
+        val labelCaptureModule = LabelCaptureModule.create(RegistryEmitter(emitter)).also {
             it.onCreate(reactContext)
         }
         moduleBase = ScanditDataCaptureLabelModuleBase(labelCaptureModule, serviceLocator)
